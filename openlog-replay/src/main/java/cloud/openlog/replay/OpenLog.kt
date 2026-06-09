@@ -41,6 +41,10 @@ object OpenLog {
      * @param throttleMs    minimum interval between snapshots of a window.
      * @param http          when set, events upload via [HttpSessionSink]; otherwise
      *                      they are written to a local NDJSON file (validation sink).
+     * @param debugViewIds  DEBUG ONLY. When true, emits a schema-legal Custom event
+     *                      per screen mapping each wireframe `id` to its Android
+     *                      resource-id name (e.g. `"balanceValue"`) so a recording
+     *                      can be traced back to the XML. Off in production.
      */
     data class Config(
         val maskAllText: Boolean = true,
@@ -48,6 +52,7 @@ object OpenLog {
         val sampleRate: Double = 1.0,
         val throttleMs: Long = 1_000L,
         val http: HttpSessionSink.Config? = null,
+        val debugViewIds: Boolean = false,
     )
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -110,6 +115,7 @@ object OpenLog {
             correlation = correlation,
             density = density,
             throttleMs = config.throttleMs,
+            debugViewIds = config.debugViewIds,
         )
         engine = captureEngine
         onMain { captureEngine.start() }

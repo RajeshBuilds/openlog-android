@@ -59,11 +59,13 @@
                 android:textColor="@color/muted"
                 android:textSize="13sp" />
 
+            <!-- Force-masked even though the app runs unmasked in debug, via openlog-mask. -->
             <TextView
                 android:id="@+id/balanceValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
+                android:tag="openlog-mask"
                 android:text="@string/account_balance_value"
                 android:textColor="@color/on_surface"
                 android:textSize="28sp"
@@ -76,12 +78,10 @@
                 android:contentDescription="@null"
                 android:src="@drawable/sample_avatar" />
 
-            <!-- Explicitly opted out of masking to show unmasked capture in the JSON. -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:tag="openlog-no-mask"
                 android:text="@string/unmasked_note"
                 android:textColor="@color/accent"
                 android:textSize="13sp" />

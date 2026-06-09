@@ -43,6 +43,22 @@ class MaskPolicyTest {
     }
 
     @Test
+    fun maskTagForcesMaskWhenDefaultOff() {
+        val policy = MaskPolicy(maskAllText = false, maskAllImages = false)
+        val tv = TextView(activity).apply { tag = MaskPolicy.MASK }
+        assertTrue(policy.maskText(tv, ancestorUnmasked = false))
+        assertTrue(policy.maskImage(tv, ancestorUnmasked = false))
+    }
+
+    @Test
+    fun maskTagDoesNotCollideWithNoMaskTag() {
+        val policy = MaskPolicy(maskAllText = false)
+        val tv = TextView(activity).apply { tag = MaskPolicy.NO_MASK }
+        // A no-mask view must stay unmasked, not be caught by the openlog-mask check.
+        assertFalse(policy.maskText(tv, ancestorUnmasked = false))
+    }
+
+    @Test
     fun defaultMasksText() {
         val policy = MaskPolicy(maskAllText = true)
         val tv = TextView(activity)

@@ -11,6 +11,8 @@ import cloud.openlog.replay.wire.Style
 import cloud.openlog.replay.wire.Touch
 import cloud.openlog.replay.wire.Wireframe
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -82,6 +84,17 @@ class BuildersSchemaTest {
     fun keyboardValidates() {
         SchemaValidator.assertValid(line(Events.keyboardOpen(7, 320)))
         SchemaValidator.assertValid(line(Events.keyboardClosed(8)))
+    }
+
+    @Test
+    fun customDebugViewIdsMapValidates() {
+        // The debug id -> resource-name map rides on a generic Custom event, whose
+        // payload is schema-unconstrained.
+        val payload = buildJsonObject {
+            put("12345", "balanceValue")
+            put("67890", "signInButton")
+        }
+        SchemaValidator.assertValid(line(Events.custom(9, "openlog-debug-viewids", payload)))
     }
 
     @Test

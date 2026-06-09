@@ -4,13 +4,13 @@
 
     <!-- Main -->
     <string name="main_title">OpenLog Capture Demo</string>
-    <string name="main_subtitle">A wireframe session-capture demo. Text, inputs and images below are masked by default in the recorded stream.</string>
+    <string name="main_subtitle">Wireframe session-capture demo. Running UNMASKED in debug so the recorded JSON is readable — the balance below is force-hidden with the openlog-mask tag.</string>
     <string name="recording_status_on">● Recording</string>
     <string name="recording_status_off">○ Not recording</string>
     <string name="toggle_recording">Toggle recording</string>
     <string name="account_balance_label">Account balance</string>
     <string name="account_balance_value">$12,840.55</string>
-    <string name="unmasked_note">This line is tagged openlog-no-mask (captured as-is)</string>
+    <string name="unmasked_note">Everything here is captured as-is (debug). Only the balance is masked, via openlog-mask.</string>
     <string name="go_to_login">Open login form</string>
     <string name="go_to_viewer">View recorded JSON</string>
 
