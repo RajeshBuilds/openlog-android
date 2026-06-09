@@ -1,6 +1,6 @@
 # OpenLog — Android Capture SDK
 
-A privacy-first **session-capture SDK** for Android banking apps. It records each
+A privacy-first **session-capture SDK** for Android apps. It records each
 screen as a **wireframe** (never a screenshot), masks all text and images by
 default, and emits a schema-valid [rr-mobile](schema/rr-mobile-schema.json) NDJSON
 stream that a web replay engine can later play back.
@@ -10,7 +10,7 @@ stream that a web replay engine can later play back.
 
 ## Highlights
 
-- **Wireframe capture only** — no screenshots, ever (banking-safe).
+- **Wireframe capture only** — no screenshots, ever (PII-safe).
 - **Mask by default** — text → asterisks, images → placeholders. Opt out per view
   with `openlog-no-mask`; force-mask with `openlog-no-capture`. Passwords are
   always masked.
