@@ -87,6 +87,19 @@ class BuildersSchemaTest {
     }
 
     @Test
+    fun idNameIsAcceptedOnEveryWireframe() {
+        // idName is an OpenLog extension declared on every wireframe in the vendored schema.
+        val root = Wireframe(
+            id = 5, idName = "rootContainer", width = 412, height = 915, type = MobileNodeType.DIV,
+            childWireframes = listOf(
+                textWireframe(11).copy(idName = "balanceValue"),
+                inputWireframe(12).copy(idName = "passwordField"),
+            ),
+        )
+        SchemaValidator.assertValid(line(Events.fullSnapshot(2, listOf(root))))
+    }
+
+    @Test
     fun customEventWithObjectPayloadValidates() {
         // A generic Custom event's payload is schema-unconstrained.
         val payload = buildJsonObject {

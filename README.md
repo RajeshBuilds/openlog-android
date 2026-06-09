@@ -61,6 +61,7 @@ The `:app` module is a small host app that exercises the SDK end to end:
   drives touch, soft-keyboard and input-mutation events (values stay masked).
 - **Recording viewer** (`RecordingViewerActivity`) — flushes the live session and
   pretty-prints the on-disk NDJSON stream so you can see exactly what was emitted.
+  Each node carries `id` (stable number) and `idName` (the XML resource-id name).
 
 ```bash
 ./gradlew :app:assembleDebug          # build the demo APK

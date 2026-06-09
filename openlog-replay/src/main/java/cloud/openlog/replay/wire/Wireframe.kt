@@ -55,16 +55,15 @@ object InputType {
  * [parentId] is `@Transient` — it exists only for the diff (T6) and is never
  * serialized to the wire.
  *
- * [name] is a DEBUG-ONLY development aid: the Android resource-id name of the
- * source view (e.g. `"balanceValue"`). It is **not** part of the canonical
- * rr-mobile schema (every wireframe is `additionalProperties: false`), so it is
- * null/omitted by default and only populated when resource-name capture is
- * explicitly enabled. Production recordings stay byte-for-byte canonical.
+ * [idName] is the Android resource-id name of the source view (e.g.
+ * `"balanceValue"`), or null when the view has no id. It is an OpenLog extension
+ * to the rr-mobile schema (the vendored `rr-mobile-schema.json` declares it on
+ * every wireframe) that makes a recording traceable back to the XML.
  */
 @Serializable
 data class Wireframe(
     val id: Int,
-    val name: String? = null,
+    val idName: String? = null,
     val x: Int = 0,
     val y: Int = 0,
     val width: Int,

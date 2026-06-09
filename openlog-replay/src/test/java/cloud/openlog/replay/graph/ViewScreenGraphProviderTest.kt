@@ -108,10 +108,11 @@ class ViewScreenGraphProviderTest {
     }
 
     @Test
-    fun resourceNameIncludedOnlyWhenEnabled() {
+    fun resourceIdNameIsCaptured() {
         val controller = Robolectric.buildActivity(Activity::class.java).create()
         val activity = controller.get()
         val root = LinearLayout(activity).apply {
+            // no id -> idName must be null
             layoutParams = ViewGroup.LayoutParams(MATCH, MATCH)
             addView(TextView(activity).apply { id = android.R.id.text1; text = "hi" })
         }
@@ -124,12 +125,10 @@ class ViewScreenGraphProviderTest {
         root.layout(0, 0, 200, 200)
         val policy = MaskPolicy(maskAllText = false, maskAllImages = false)
 
-        val withNames = ViewScreenGraphProvider(includeResourceNames = true).snapshot(root, 1f, policy)!!
-        val named = flatten(withNames).first { it.type == MobileNodeType.TEXT }
-        assertEquals("text1", named.name)
-
-        val withoutNames = ViewScreenGraphProvider().snapshot(root, 1f, policy)!!
-        assertTrue("names omitted by default", flatten(withoutNames).all { it.name == null })
+        val tree = ViewScreenGraphProvider().snapshot(root, 1f, policy)!!
+        val nodes = flatten(tree)
+        assertEquals("text1", nodes.first { it.type == MobileNodeType.TEXT }.idName)
+        assertNull("a view without an id has null idName", nodes.first { it.type == MobileNodeType.DIV }.idName)
     }
 
     @Test
