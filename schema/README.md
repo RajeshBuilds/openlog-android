@@ -22,3 +22,14 @@ event builder against this schema and fails the build on any violation.
   `wire/Style.kt`.
 - `screenshot` wireframes exist in the schema but are never emitted (banking is
   wireframe-only — golden rule #2).
+
+## OpenLog extensions to the vendored schema
+
+This `rr-mobile-schema.json` is **intentionally forked** from upstream PostHog —
+OpenLog uses its own web replay player, so the contract is ours to extend.
+
+- **`idName`** is declared (optional, `string`) on every wireframe definition. It
+  carries the source view's Android resource-id name (e.g. `"balanceValue"`) so a
+  recording is traceable back to the XML. It is emitted on every node that has an
+  id. This is the one divergence from upstream; recordings are therefore **not**
+  interchangeable with PostHog's player (by design). See `wire/Wireframe.kt`.

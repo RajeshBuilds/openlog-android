@@ -56,6 +56,7 @@ object OpenLog {
     @Volatile private var config: Config = Config()
     @Volatile private var engine: SessionCaptureEngine? = null
     @Volatile private var correlation: Correlation? = null
+    @Volatile private var sink: SessionSink? = null
     @Volatile private var consentGranted: Boolean = false
 
     /** Configure the SDK. Must be called before [start]. */
@@ -79,6 +80,10 @@ object OpenLog {
     @JvmStatic
     fun sessionId(): String? = correlation?.sessionId
 
+    /** True while a capture session is active. */
+    @JvmStatic
+    fun isRecording(): Boolean = engine != null
+
     /**
      * Start a capture session. No-op when already running, on API < 26, without
      * consent, or when sampled out.
@@ -95,7 +100,7 @@ object OpenLog {
         val correlation = Correlation.start().also { this.correlation = it }
         val density = ctx.resources.displayMetrics.density
         val policy = MaskPolicy(config.maskAllText, config.maskAllImages)
-        val sink = buildSink(ctx, correlation)
+        val sink = buildSink(ctx, correlation).also { this.sink = it }
 
         val captureEngine = SessionCaptureEngine(
             context = ctx,
@@ -117,6 +122,23 @@ object OpenLog {
         engine = null
         onMain { captureEngine.stop() }
     }
+
+    /**
+     * Block until queued capture work is written and the sink flushed, so the
+     * session file can be read mid-session. No-op when not recording. Call off the
+     * main thread.
+     */
+    @JvmStatic
+    fun flush() {
+        engine?.flushBlocking()
+    }
+
+    /**
+     * The NDJSON file the current session is writing to, or null when not recording
+     * (or when uploading via the HTTP sink). Pair with [flush] before reading.
+     */
+    @JvmStatic
+    fun currentSessionFile(): File? = (sink as? FileSessionSink)?.file
 
     /**
      * An OkHttp interceptor that injects the session's W3C `traceparent` on each

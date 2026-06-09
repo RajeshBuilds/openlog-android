@@ -11,6 +11,8 @@ import cloud.openlog.replay.wire.Style
 import cloud.openlog.replay.wire.Touch
 import cloud.openlog.replay.wire.Wireframe
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -82,6 +84,29 @@ class BuildersSchemaTest {
     fun keyboardValidates() {
         SchemaValidator.assertValid(line(Events.keyboardOpen(7, 320)))
         SchemaValidator.assertValid(line(Events.keyboardClosed(8)))
+    }
+
+    @Test
+    fun idNameIsAcceptedOnEveryWireframe() {
+        // idName is an OpenLog extension declared on every wireframe in the vendored schema.
+        val root = Wireframe(
+            id = 5, idName = "rootContainer", width = 412, height = 915, type = MobileNodeType.DIV,
+            childWireframes = listOf(
+                textWireframe(11).copy(idName = "balanceValue"),
+                inputWireframe(12).copy(idName = "passwordField"),
+            ),
+        )
+        SchemaValidator.assertValid(line(Events.fullSnapshot(2, listOf(root))))
+    }
+
+    @Test
+    fun customEventWithObjectPayloadValidates() {
+        // A generic Custom event's payload is schema-unconstrained.
+        val payload = buildJsonObject {
+            put("key", "value")
+            put("n", 1)
+        }
+        SchemaValidator.assertValid(line(Events.custom(9, "demo-tag", payload)))
     }
 
     @Test

@@ -50,3 +50,7 @@ the Android SDK to be installed and `sdk.dir` set in `local.properties` (or `AND
 - The canonical `MobileStyles` has `additionalProperties: false` and no `bar` field, so
   `style.bar` (mentioned in SPEC 2.3) is NOT emitted. Progress uses `value`/`max`. See
   `wire/Style.kt` and `schema/README.md`.
+- `wire/Wireframe.kt` adds an `idName` field (the source view's resource-id name) and the
+  vendored `schema/rr-mobile-schema.json` is forked to declare it on every wireframe. This
+  is an intentional OpenLog extension (we run our own player, not PostHog's). See
+  `schema/README.md`.

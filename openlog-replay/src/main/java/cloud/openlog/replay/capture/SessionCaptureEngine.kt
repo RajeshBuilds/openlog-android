@@ -28,6 +28,7 @@ import java.util.WeakHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ThreadFactory
+import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
 /**
@@ -93,6 +94,16 @@ class SessionCaptureEngine(
         executor.execute {
             runCatching { sink.flush() }
         }
+    }
+
+    /**
+     * Block until all currently-queued capture work is written and the sink is
+     * flushed to durable storage. Useful for reading the session file mid-session
+     * (e.g. an in-app recording viewer). Call off the main thread.
+     */
+    fun flushBlocking(timeoutMs: Long = 2_000L) {
+        val future = executor.submit { runCatching { sink.flush() } }
+        runCatching { future.get(timeoutMs, TimeUnit.MILLISECONDS) }
     }
 
     // ---- window discovery (T2) --------------------------------------------

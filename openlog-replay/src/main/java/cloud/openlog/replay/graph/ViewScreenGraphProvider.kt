@@ -40,6 +40,10 @@ import kotlinx.serialization.json.JsonPrimitive
  *    try/catch so a recycled/detached view can never crash the capture thread;
  *  - `id` is `System.identityHashCode(view)` — stable across frames (golden rule #4);
  *  - all geometry is divided by [density] to density-normalized integers.
+ *
+ * Each wireframe also carries [Wireframe.idName] — the source view's Android
+ * resource-id name (e.g. `"balanceValue"`) — when the view has an id, so a
+ * recording can be traced back to the XML.
  */
 class ViewScreenGraphProvider : ScreenGraphProvider {
 
@@ -57,6 +61,7 @@ class ViewScreenGraphProvider : ScreenGraphProvider {
 
             val unmasked = ancestorUnmasked || policy.isUnmasked(this)
             val id = System.identityHashCode(this)
+            val idName = resourceEntryName()
 
             val location = IntArray(2).also { getLocationOnScreen(it) }
             val x = (location[0] / density).roundToInt()
@@ -66,7 +71,7 @@ class ViewScreenGraphProvider : ScreenGraphProvider {
 
             val style = buildStyle(density)
             val base = Wireframe(
-                id = id, x = x, y = y, width = w, height = h,
+                id = id, idName = idName, x = x, y = y, width = w, height = h,
                 type = MobileNodeType.DIV, style = style, parentId = parentId,
             )
 
@@ -150,6 +155,13 @@ class ViewScreenGraphProvider : ScreenGraphProvider {
     }
 
     // ---- helpers -----------------------------------------------------------
+
+    /** The view's Android resource-id entry name (e.g. "balanceValue"), or null when it has no id. */
+    private fun View.resourceEntryName(): String? {
+        val viewId = id
+        if (viewId == View.NO_ID) return null
+        return runCatching { resources.getResourceEntryName(viewId) }.getOrNull()
+    }
 
     private fun View.isSystemBar(barId: Int): Boolean = id == barId
 

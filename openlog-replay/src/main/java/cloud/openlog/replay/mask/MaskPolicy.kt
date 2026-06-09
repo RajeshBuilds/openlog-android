@@ -12,7 +12,11 @@ import android.widget.TextView
  *  - A view is *unmasked* only if it (or an ancestor) carries the
  *    [NO_MASK] tag/content-description.
  *  - Otherwise text and images are masked when [maskAllText]/[maskAllImages]
- *    are on (the default) or the view is tagged [NO_CAPTURE].
+ *    are on (the default) or the view is tagged [NO_CAPTURE] or [MASK].
+ *
+ * [MASK] (`openlog-mask`) is the opt-in counterpart to mask-by-default: tag a
+ * view with it to force-mask that view even when the global defaults are turned
+ * off (e.g. an app running unmasked in debug that still wants to hide a balance).
  *
  * Masked text is replaced at the source with asterisks; masked images omit their
  * base64 so the player renders a placeholder. The wire format therefore never
@@ -28,16 +32,17 @@ class MaskPolicy(
     fun maskText(v: View, ancestorUnmasked: Boolean): Boolean {
         if (ancestorUnmasked || isUnmasked(v)) return false
         if (v is TextView && v.isPasswordInput()) return true
-        return v.hasTag(NO_CAPTURE) || maskAllText
+        return v.hasTag(NO_CAPTURE) || v.hasTag(MASK) || maskAllText
     }
 
     /** Whether a view's image content must be masked (base64 omitted). */
     fun maskImage(v: View, ancestorUnmasked: Boolean): Boolean =
-        !(ancestorUnmasked || isUnmasked(v)) && (v.hasTag(NO_CAPTURE) || maskAllImages)
+        !(ancestorUnmasked || isUnmasked(v)) && (v.hasTag(NO_CAPTURE) || v.hasTag(MASK) || maskAllImages)
 
     companion object {
         const val NO_CAPTURE = "openlog-no-capture"
         const val NO_MASK = "openlog-no-mask"
+        const val MASK = "openlog-mask"
     }
 }
 

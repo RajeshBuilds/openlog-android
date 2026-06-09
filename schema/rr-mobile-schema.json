@@ -431,6 +431,10 @@
                 "id": {
                     "type": "number"
                 },
+                "idName": {
+                    "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
+                },
                 "inputType": {
                     "const": "button",
                     "type": "string"
@@ -490,6 +494,10 @@
                 "id": {
                     "type": "number"
                 },
+                "idName": {
+                    "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
+                },
                 "inputType": {
                     "const": "checkbox",
                     "type": "string"
@@ -540,6 +548,10 @@
                 "id": {
                     "type": "number"
                 },
+                "idName": {
+                    "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
+                },
                 "style": {
                     "$ref": "#/definitions/MobileStyles"
                 },
@@ -587,6 +599,10 @@
                 "id": {
                     "type": "number"
                 },
+                "idName": {
+                    "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
+                },
                 "style": {
                     "$ref": "#/definitions/MobileStyles"
                 },
@@ -633,6 +649,10 @@
                 },
                 "id": {
                     "type": "number"
+                },
+                "idName": {
+                    "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
                 },
                 "inputType": {
                     "enum": ["text", "password", "email", "number", "search", "tel", "url"],
@@ -713,6 +733,10 @@
                 "id": {
                     "type": "number"
                 },
+                "idName": {
+                    "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
+                },
                 "style": {
                     "$ref": "#/definitions/MobileStyles"
                 },
@@ -755,6 +779,10 @@
                 },
                 "id": {
                     "type": "number"
+                },
+                "idName": {
+                    "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
                 },
                 "label": {
                     "type": "string"
@@ -805,6 +833,10 @@
                 },
                 "id": {
                     "type": "number"
+                },
+                "idName": {
+                    "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
                 },
                 "inputType": {
                     "const": "progress",
@@ -869,6 +901,10 @@
                 "id": {
                     "type": "number"
                 },
+                "idName": {
+                    "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
+                },
                 "inputType": {
                     "const": "radio",
                     "type": "string"
@@ -919,6 +955,10 @@
                 "id": {
                     "type": "number"
                 },
+                "idName": {
+                    "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
+                },
                 "style": {
                     "$ref": "#/definitions/MobileStyles"
                 },
@@ -961,6 +1001,10 @@
                 },
                 "id": {
                     "type": "number"
+                },
+                "idName": {
+                    "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
                 },
                 "style": {
                     "$ref": "#/definitions/MobileStyles"
@@ -1010,6 +1054,10 @@
                 "id": {
                     "type": "number"
                 },
+                "idName": {
+                    "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
+                },
                 "style": {
                     "$ref": "#/definitions/MobileStyles"
                 },
@@ -1056,6 +1104,10 @@
                 },
                 "id": {
                     "type": "number"
+                },
+                "idName": {
+                    "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
                 },
                 "inputType": {
                     "const": "select",
@@ -1114,6 +1166,10 @@
                 "id": {
                     "type": "number"
                 },
+                "idName": {
+                    "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
+                },
                 "style": {
                     "$ref": "#/definitions/MobileStyles"
                 },
@@ -1156,6 +1212,10 @@
                 },
                 "id": {
                     "type": "number"
+                },
+                "idName": {
+                    "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
                 },
                 "style": {
                     "$ref": "#/definitions/MobileStyles"
@@ -1206,6 +1266,10 @@
                 },
                 "id": {
                     "type": "number"
+                },
+                "idName": {
+                    "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
                 },
                 "inputType": {
                     "const": "text_area",
@@ -1264,6 +1328,10 @@
                 "id": {
                     "type": "number"
                 },
+                "idName": {
+                    "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
+                },
                 "inputType": {
                     "const": "toggle",
                     "type": "string"
@@ -1313,6 +1381,10 @@
                 },
                 "id": {
                     "type": "number"
+                },
+                "idName": {
+                    "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
                 },
                 "style": {
                     "$ref": "#/definitions/MobileStyles"
