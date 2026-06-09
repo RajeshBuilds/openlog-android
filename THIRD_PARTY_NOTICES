@@ -1,0 +1,66 @@
+OpenLog Android Capture SDK — Third-Party Notices
+=================================================
+
+This product includes the following third-party software. Each is used under the
+terms of its respective license.
+
+Runtime dependencies
+---------------------
+
+1. Curtains
+   - Coordinates: com.squareup.curtains:curtains
+   - Copyright (c) Square, Inc.
+   - License: Apache License 2.0
+   - https://github.com/square/curtains
+
+2. kotlinx.serialization (kotlinx-serialization-json)
+   - Coordinates: org.jetbrains.kotlinx:kotlinx-serialization-json
+   - Copyright (c) JetBrains s.r.o.
+   - License: Apache License 2.0
+   - https://github.com/Kotlin/kotlinx.serialization
+
+3. AndroidX Core KTX
+   - Coordinates: androidx.core:core-ktx
+   - Copyright (c) The Android Open Source Project
+   - License: Apache License 2.0
+   - https://developer.android.com/jetpack/androidx
+
+4. AndroidX WorkManager (work-runtime-ktx)
+   - Coordinates: androidx.work:work-runtime-ktx
+   - Copyright (c) The Android Open Source Project
+   - License: Apache License 2.0
+   - https://developer.android.com/jetpack/androidx
+
+5. AndroidX Lifecycle (lifecycle-process)
+   - Coordinates: androidx.lifecycle:lifecycle-process
+   - Copyright (c) The Android Open Source Project
+   - License: Apache License 2.0
+   - https://developer.android.com/jetpack/androidx
+
+Compile-only dependency (provided by the host application)
+----------------------------------------------------------
+
+6. OkHttp
+   - Coordinates: com.squareup.okhttp3:okhttp
+   - Copyright (c) Square, Inc.
+   - License: Apache License 2.0
+   - https://github.com/square/okhttp
+
+Build / test-only tooling (not shipped in the SDK artifact)
+-----------------------------------------------------------
+
+7. networknt json-schema-validator — Apache License 2.0
+8. FasterXML Jackson Databind — Apache License 2.0
+9. JUnit 4 — Eclipse Public License 1.0
+10. Robolectric — MIT License
+
+Reference material
+------------------
+
+The mechanism of session capture was studied from PostHog/posthog-android
+(MIT License) and the wire contract from PostHog/posthog
+(rr-mobile-schema.json). This SDK is a clean-room reimplementation against
+SPEC.md; no PostHog source files were copied verbatim. Nothing under PostHog's
+`ee/` directory was referenced.
+
+Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0
