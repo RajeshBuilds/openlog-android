@@ -23,6 +23,7 @@ dependencyResolutionManagement {
 rootProject.name = "openlog-android"
 
 include(":openlog-replay")
+include(":app")
 
 // NOTE: The pure-JVM wire-contract validation harness in `tools/wire-verify`
 // is an INDEPENDENT Gradle build (it has its own settings.gradle.kts) so it

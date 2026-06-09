@@ -50,6 +50,26 @@ val client = baseClient.newBuilder().addInterceptor(OpenLog.traceInterceptor()).
 OpenLog.stop()
 ```
 
+## Demo app
+
+The `:app` module is a small host app that exercises the SDK end to end:
+
+- **Home** (`MainActivity`) — masked-by-default content (an account balance, an
+  avatar image, plus one `openlog-no-mask`-tagged line captured as-is) and a
+  button to toggle recording.
+- **Login** (`LoginActivity`) — email / password / checkbox / button form that
+  drives touch, soft-keyboard and input-mutation events (values stay masked).
+- **Recording viewer** (`RecordingViewerActivity`) — flushes the live session and
+  pretty-prints the on-disk NDJSON stream so you can see exactly what was emitted.
+
+```bash
+./gradlew :app:assembleDebug          # build the demo APK
+# install on a device/emulator:
+./gradlew :app:installDebug
+```
+
+It reads the active session via `OpenLog.currentSessionFile()` and `OpenLog.flush()`.
+
 ## Architecture (maps to SPEC tasks)
 
 | Package | Responsibility | SPEC |

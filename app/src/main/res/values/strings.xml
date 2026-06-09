@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenLog Demo</string>
+
+    <!-- Main -->
+    <string name="main_title">OpenLog Capture Demo</string>
+    <string name="main_subtitle">A wireframe session-capture demo. Text, inputs and images below are masked by default in the recorded stream.</string>
+    <string name="recording_status_on">● Recording</string>
+    <string name="recording_status_off">○ Not recording</string>
+    <string name="toggle_recording">Toggle recording</string>
+    <string name="account_balance_label">Account balance</string>
+    <string name="account_balance_value">$12,840.55</string>
+    <string name="unmasked_note">This line is tagged openlog-no-mask (captured as-is)</string>
+    <string name="go_to_login">Open login form</string>
+    <string name="go_to_viewer">View recorded JSON</string>
+
+    <!-- Login -->
+    <string name="login_title">Sign in</string>
+    <string name="hint_email">Email</string>
+    <string name="hint_password">Password</string>
+    <string name="remember_me">Remember me</string>
+    <string name="sign_in">Sign in</string>
+    <string name="signed_in_toast">Signed in (demo)</string>
+
+    <!-- Viewer -->
+    <string name="viewer_title">Recorded session (NDJSON)</string>
+    <string name="refresh">Refresh</string>
+    <string name="copy_path">Copy file path</string>
+    <string name="no_recording">No active recording. Toggle recording on the home screen first.</string>
+    <string name="loading">Loading…</string>
+</resources>
