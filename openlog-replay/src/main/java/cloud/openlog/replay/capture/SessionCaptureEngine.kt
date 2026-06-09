@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.view.MotionEvent
 import android.view.View
-import android.view.ViewGroup
 import android.view.Window
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -31,8 +30,6 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 
 /**
  * The capture engine (SPEC.md T2/T3/T6/T7). Ties together window discovery,
@@ -51,7 +48,6 @@ class SessionCaptureEngine(
     private val correlation: Correlation,
     private val density: Float,
     throttleMs: Long = 1_000L,
-    private val debugViewIds: Boolean = false,
 ) {
     private val appContext = context.applicationContext
 
@@ -169,7 +165,6 @@ class SessionCaptureEngine(
             if (!status.sentFullSnapshot || screenChanged) {
                 emit(Events.meta(now, href, decor.width.norm(), decor.height.norm()))
                 emit(Events.fullSnapshot(now, wireframes))
-                if (debugViewIds) emitDebugViewIds(decor, now)
                 status.sentFullSnapshot = true
                 status.screenHref = href
                 status.lastSnapshot = wireframes
@@ -183,30 +178,6 @@ class SessionCaptureEngine(
         } catch (_: Throwable) {
             // Never crash the capture thread (Part 4).
         }
-    }
-
-    // ---- debug view-id map (development aid) -------------------------------
-
-    /**
-     * Emit a Custom event mapping each wireframe `id` (`View.identityHashCode`) to
-     * its Android resource-id name, so a recording can be traced back to the XML.
-     * Schema-legal: a Custom event's `payload` is unconstrained. Debug builds only.
-     */
-    private fun emitDebugViewIds(decor: View, now: Long) {
-        val names = LinkedHashMap<String, String>()
-        fun walk(v: View) {
-            if (v.id != View.NO_ID) {
-                val name = runCatching { v.resources.getResourceEntryName(v.id) }.getOrNull()
-                if (name != null) names[System.identityHashCode(v).toString()] = name
-            }
-            if (v is ViewGroup) {
-                for (i in 0 until v.childCount) walk(v.getChildAt(i))
-            }
-        }
-        runCatching { walk(decor) }
-        if (names.isEmpty()) return
-        val payload = buildJsonObject { names.forEach { (id, name) -> put(id, name) } }
-        emit(Events.custom(now, "openlog-debug-viewids", payload))
     }
 
     // ---- keyboard (T7) -----------------------------------------------------

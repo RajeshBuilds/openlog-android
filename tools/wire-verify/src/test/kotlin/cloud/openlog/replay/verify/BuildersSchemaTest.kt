@@ -87,14 +87,13 @@ class BuildersSchemaTest {
     }
 
     @Test
-    fun customDebugViewIdsMapValidates() {
-        // The debug id -> resource-name map rides on a generic Custom event, whose
-        // payload is schema-unconstrained.
+    fun customEventWithObjectPayloadValidates() {
+        // A generic Custom event's payload is schema-unconstrained.
         val payload = buildJsonObject {
-            put("12345", "balanceValue")
-            put("67890", "signInButton")
+            put("key", "value")
+            put("n", 1)
         }
-        SchemaValidator.assertValid(line(Events.custom(9, "openlog-debug-viewids", payload)))
+        SchemaValidator.assertValid(line(Events.custom(9, "demo-tag", payload)))
     }
 
     @Test

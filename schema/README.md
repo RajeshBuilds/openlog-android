@@ -22,3 +22,9 @@ event builder against this schema and fails the build on any violation.
   `wire/Style.kt`.
 - `screenshot` wireframes exist in the schema but are never emitted (banking is
   wireframe-only — golden rule #2).
+- `Wireframe.name` (the source view's resource-id name, e.g. `"balanceValue"`) is a
+  **debug-only** development aid enabled by `OpenLog.Config.debugResourceNames`.
+  Because every wireframe is `additionalProperties: false`, this field is
+  non-canonical, so it is **off by default** and omitted from production
+  recordings — which therefore stay byte-for-byte schema-valid. The CI gate only
+  validates default (canonical) output. See `wire/Wireframe.kt`.

@@ -40,8 +40,14 @@ import kotlinx.serialization.json.JsonPrimitive
  *    try/catch so a recycled/detached view can never crash the capture thread;
  *  - `id` is `System.identityHashCode(view)` — stable across frames (golden rule #4);
  *  - all geometry is divided by [density] to density-normalized integers.
+ *
+ * @param includeResourceNames DEBUG ONLY. When true, each wireframe also carries the
+ *   source view's Android resource-id name in [Wireframe.name] (a non-canonical
+ *   field) so a recording can be traced back to the XML. Off in production.
  */
-class ViewScreenGraphProvider : ScreenGraphProvider {
+class ViewScreenGraphProvider(
+    private val includeResourceNames: Boolean = false,
+) : ScreenGraphProvider {
 
     override fun snapshot(root: View, density: Float, policy: MaskPolicy): Wireframe? =
         root.toWireframe(density, policy, parentId = null, ancestorUnmasked = false)
@@ -57,6 +63,7 @@ class ViewScreenGraphProvider : ScreenGraphProvider {
 
             val unmasked = ancestorUnmasked || policy.isUnmasked(this)
             val id = System.identityHashCode(this)
+            val resourceName = resourceEntryName()
 
             val location = IntArray(2).also { getLocationOnScreen(it) }
             val x = (location[0] / density).roundToInt()
@@ -66,7 +73,7 @@ class ViewScreenGraphProvider : ScreenGraphProvider {
 
             val style = buildStyle(density)
             val base = Wireframe(
-                id = id, x = x, y = y, width = w, height = h,
+                id = id, name = resourceName, x = x, y = y, width = w, height = h,
                 type = MobileNodeType.DIV, style = style, parentId = parentId,
             )
 
@@ -150,6 +157,14 @@ class ViewScreenGraphProvider : ScreenGraphProvider {
     }
 
     // ---- helpers -----------------------------------------------------------
+
+    /** The view's Android resource-id entry name (e.g. "balanceValue"), or null. Debug only. */
+    private fun View.resourceEntryName(): String? {
+        if (!includeResourceNames) return null
+        val viewId = id
+        if (viewId == View.NO_ID) return null
+        return runCatching { resources.getResourceEntryName(viewId) }.getOrNull()
+    }
 
     private fun View.isSystemBar(barId: Int): Boolean = id == barId
 

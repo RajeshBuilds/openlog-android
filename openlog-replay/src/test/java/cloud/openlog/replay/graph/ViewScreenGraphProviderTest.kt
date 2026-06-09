@@ -108,6 +108,31 @@ class ViewScreenGraphProviderTest {
     }
 
     @Test
+    fun resourceNameIncludedOnlyWhenEnabled() {
+        val controller = Robolectric.buildActivity(Activity::class.java).create()
+        val activity = controller.get()
+        val root = LinearLayout(activity).apply {
+            layoutParams = ViewGroup.LayoutParams(MATCH, MATCH)
+            addView(TextView(activity).apply { id = android.R.id.text1; text = "hi" })
+        }
+        activity.setContentView(root)
+        controller.start().resume().visible()
+        root.measure(
+            View.MeasureSpec.makeMeasureSpec(200, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(200, View.MeasureSpec.EXACTLY),
+        )
+        root.layout(0, 0, 200, 200)
+        val policy = MaskPolicy(maskAllText = false, maskAllImages = false)
+
+        val withNames = ViewScreenGraphProvider(includeResourceNames = true).snapshot(root, 1f, policy)!!
+        val named = flatten(withNames).first { it.type == MobileNodeType.TEXT }
+        assertEquals("text1", named.name)
+
+        val withoutNames = ViewScreenGraphProvider().snapshot(root, 1f, policy)!!
+        assertTrue("names omitted by default", flatten(withoutNames).all { it.name == null })
+    }
+
+    @Test
     fun invisibleViewsAreAbsent() {
         val nodes = buildAndWalk()
         assertTrue("GONE view must not be captured", nodes.none { it.text == "Invisible" })
