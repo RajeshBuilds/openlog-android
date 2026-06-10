@@ -64,6 +64,9 @@ class ViewScreenGraphProvider(
     ): Wireframe? {
         return try {
             if (!isAttachedToWindow || width == 0 || height == 0 || visibility != View.VISIBLE) return null
+            // Excluded subtree (openlog-ignore): not emitted at all (e.g. avoids a
+            // self-capture loop when a screen renders the recording itself).
+            if (policy.isIgnored(this)) return null
 
             val unmasked = ancestorUnmasked || policy.isUnmasked(this)
             val id = System.identityHashCode(this)

@@ -13,7 +13,8 @@ stream that a web replay engine can later play back.
 - **Wireframe capture only** — no screenshots, ever (PII-safe).
 - **Mask by default** — text → asterisks, images → placeholders. Opt out per view
   with `openlog-no-mask`; force-mask with `openlog-no-capture`. Passwords are
-  always masked.
+  always masked. Exclude a subtree from capture entirely with `openlog-ignore`
+  (e.g. video surfaces, or a view that renders the recording itself).
 - **Off the main thread** — the draw loop only enqueues; all walking, diffing and
   serialization run on a single background thread.
 - **Schema-conformant wire format** — every event validates against the canonical

@@ -144,6 +144,32 @@ class ViewScreenGraphProviderTest {
     }
 
     @Test
+    fun ignoredSubtreeIsExcluded() {
+        val controller = Robolectric.buildActivity(Activity::class.java).create()
+        val activity = controller.get()
+        val ignored = LinearLayout(activity).apply {
+            tag = MaskPolicy.IGNORE
+            addView(TextView(activity).apply { text = "secret dump" })
+        }
+        val root = LinearLayout(activity).apply {
+            layoutParams = ViewGroup.LayoutParams(MATCH, MATCH)
+            addView(TextView(activity).apply { text = "kept" })
+            addView(ignored)
+        }
+        activity.setContentView(root)
+        controller.start().resume().visible()
+        root.measure(
+            View.MeasureSpec.makeMeasureSpec(400, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(800, View.MeasureSpec.EXACTLY),
+        )
+        root.layout(0, 0, 400, 800)
+
+        val nodes = flatten(ViewScreenGraphProvider().snapshot(root, 1f, MaskPolicy(maskAllText = false))!!)
+        assertTrue("non-ignored content captured", nodes.any { it.text == "kept" })
+        assertTrue("ignored subtree excluded entirely", nodes.none { it.text == "secret dump" })
+    }
+
+    @Test
     fun geometryIsDensityNormalizedIntegers() {
         val nodes = buildAndWalk()
         // density = 1f, so values equal raw px but the path through ÷density must yield ints.

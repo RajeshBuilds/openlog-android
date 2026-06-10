@@ -28,6 +28,15 @@ class MaskPolicy(
 ) {
     fun isUnmasked(v: View): Boolean = v.hasTag(NO_MASK)
 
+    /**
+     * Whether a view (and its whole subtree) must be excluded from capture entirely
+     * — not emitted as a wireframe at all. Use [IGNORE] for content that shouldn't
+     * even be a placeholder: video surfaces, huge dynamic text, or anything that
+     * would otherwise cause a self-capture feedback loop (e.g. a screen that renders
+     * the recording itself). Distinct from masking, which still emits a node.
+     */
+    fun isIgnored(v: View): Boolean = v.hasTag(IGNORE)
+
     /** Whether a view's text content must be masked. */
     fun maskText(v: View, ancestorUnmasked: Boolean): Boolean {
         if (ancestorUnmasked || isUnmasked(v)) return false
@@ -43,6 +52,7 @@ class MaskPolicy(
         const val NO_CAPTURE = "openlog-no-capture"
         const val NO_MASK = "openlog-no-mask"
         const val MASK = "openlog-mask"
+        const val IGNORE = "openlog-ignore"
     }
 }
 
