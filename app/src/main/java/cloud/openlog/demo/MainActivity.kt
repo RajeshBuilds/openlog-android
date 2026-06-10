@@ -36,6 +36,10 @@ class MainActivity : Activity() {
             startActivity(Intent(this, LoginActivity::class.java))
         }
 
+        findViewById<Button>(R.id.goToFragmentsButton).setOnClickListener {
+            startActivity(Intent(this, FragmentHostActivity::class.java))
+        }
+
         findViewById<Button>(R.id.goToViewerButton).setOnClickListener {
             startActivity(Intent(this, RecordingViewerActivity::class.java))
         }

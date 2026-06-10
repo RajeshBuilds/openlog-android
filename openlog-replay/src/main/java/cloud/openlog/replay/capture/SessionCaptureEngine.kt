@@ -69,8 +69,11 @@ class SessionCaptureEngine(
     @Volatile
     private var started = false
 
-    /** The current foreground screen name. Touched only on the capture thread. */
-    private var currentScreen: String? = null
+    /** The last screen name we emitted enter/exit for. Touched only on the capture thread. */
+    private var lastEmittedScreen: String? = null
+
+    /** Resolves Activity/Fragment screen names (off the capture thread, via lifecycle callbacks). */
+    private val screenTracker = ScreenTracker()
 
     private val rootViewsListener = OnRootViewsChangedListener { view, added ->
         if (added) attach(view) else detach(view)
@@ -101,6 +104,7 @@ class SessionCaptureEngine(
     fun start() {
         if (started) return
         started = true
+        screenTracker.install(appContext)
         // App foreground/background events (fires onStart immediately for the current state).
         runCatching { ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleObserver) }
         // Attach to every existing window, then keep up with new ones (T2).
@@ -111,12 +115,13 @@ class SessionCaptureEngine(
     fun stop() {
         if (!started) return
         started = false
+        screenTracker.uninstall()
         runCatching { ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleObserver) }
         Curtains.onRootViewsChangedListeners -= rootViewsListener
         synchronized(tracked) { tracked.keys.toList() }.forEach { detach(it) }
         executor.execute {
-            currentScreen?.let { runCatching { emit(Events.screenExit(System.currentTimeMillis(), it)) } }
-            currentScreen = null
+            lastEmittedScreen?.let { runCatching { emit(Events.screenExit(System.currentTimeMillis(), it)) } }
+            lastEmittedScreen = null
             runCatching { sink.flush() }
         }
     }
@@ -183,17 +188,19 @@ class SessionCaptureEngine(
             if (status.drawSequence.get() != seqBefore) return
 
             val wireframes = listOf(root)
-            val href = hrefOf(decor)
+            // Prefer the resumed Fragment/Activity name from the tracker; fall back to
+            // the decor's hosting Activity when the tracker has nothing yet.
+            val screen = screenTracker.currentScreen ?: hrefOf(decor)
             val now = System.currentTimeMillis()
 
-            handleScreenTransition(href, now)
+            handleScreenTransition(screen, now)
 
-            val screenChanged = href != status.screenHref
+            val screenChanged = screen != status.screenHref
             if (!status.sentFullSnapshot || screenChanged) {
-                emit(Events.meta(now, href, decor.width.norm(), decor.height.norm()))
+                emit(Events.meta(now, screen, decor.width.norm(), decor.height.norm()))
                 emit(Events.fullSnapshot(now, wireframes))
                 status.sentFullSnapshot = true
-                status.screenHref = href
+                status.screenHref = screen
                 status.lastSnapshot = wireframes
             } else {
                 val previous = status.lastSnapshot.orEmpty()
@@ -210,11 +217,11 @@ class SessionCaptureEngine(
     // ---- screen lifecycle (OpenLog extension) ------------------------------
 
     /** Emit screen enter/exit Custom events as the foreground screen changes. */
-    private fun handleScreenTransition(href: String, now: Long) {
-        if (href == currentScreen) return
-        currentScreen?.let { emit(Events.screenExit(now, it)) }
-        emit(Events.screenEnter(now, href))
-        currentScreen = href
+    private fun handleScreenTransition(screen: String, now: Long) {
+        if (screen == lastEmittedScreen) return
+        lastEmittedScreen?.let { emit(Events.screenExit(now, it)) }
+        emit(Events.screenEnter(now, screen))
+        lastEmittedScreen = screen
     }
 
     // ---- keyboard (T7) -----------------------------------------------------

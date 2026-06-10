@@ -23,6 +23,9 @@ stream that a web replay engine can later play back.
 - **Action-level signals** — beyond the wireframe tree and diffs, the stream carries
   `screen` enter/exit (with names → nav flow), `app_lifecycle` foreground/background,
   `tap_target` (what was tapped), and `keyboard` events, all as rrweb Custom events.
+- **Fragment-aware screen names** — single-Activity / multi-Fragment apps report the
+  resumed **Fragment** class as the screen (Activity name as the fallback). androidx
+  .fragment is an optional, runtime-guarded dependency.
 
 ## Quick start
 

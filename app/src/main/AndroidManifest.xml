@@ -23,6 +23,10 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
+            android:name=".FragmentHostActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".RecordingViewerActivity"
             android:exported="false" />
 

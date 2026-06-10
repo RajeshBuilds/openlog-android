@@ -35,6 +35,8 @@ android {
 dependencies {
     implementation(project(":openlog-replay"))
     implementation(libs.androidx.core.ktx)
+    // Single-Activity / multi-Fragment demo screen (exercises per-fragment screen names).
+    implementation(libs.androidx.fragment.ktx)
     // Used by the in-app recording viewer to pretty-print the NDJSON stream.
     implementation(libs.kotlinx.serialization.json)
 }
