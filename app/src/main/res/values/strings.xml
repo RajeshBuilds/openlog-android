@@ -12,7 +12,17 @@
     <string name="account_balance_value">$12,840.55</string>
     <string name="unmasked_note">Everything here is captured as-is (debug). Only the balance is masked, via openlog-mask.</string>
     <string name="go_to_login">Open login form</string>
+    <string name="go_to_fragments">Open fragment screens</string>
     <string name="go_to_viewer">View recorded JSON</string>
+
+    <!-- Fragment host -->
+    <string name="fragment_host_title">Single Activity · Fragments</string>
+    <string name="tab_accounts">Accounts</string>
+    <string name="tab_transactions">Transactions</string>
+    <string name="accounts_title">Accounts</string>
+    <string name="accounts_body">This is AccountsFragment. The recording should report the screen as \"AccountsFragment\", not the host Activity.</string>
+    <string name="transactions_title">Transactions</string>
+    <string name="transactions_body">This is TransactionsFragment. Switch tabs and the screen name in the JSON should change per fragment.</string>
 
     <!-- Login -->
     <string name="login_title">Sign in</string>

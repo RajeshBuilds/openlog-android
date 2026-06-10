@@ -50,6 +50,10 @@ dependencies {
     // network interceptor used for trace correlation (T8).
     compileOnly(libs.okhttp)
 
+    // androidx.fragment is OPTIONAL: used (when present on the host) to resolve
+    // per-Fragment screen names. Guarded at runtime so fragment-less hosts work.
+    compileOnly(libs.androidx.fragment.ktx)
+
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)

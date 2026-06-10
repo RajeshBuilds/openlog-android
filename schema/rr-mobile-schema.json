@@ -435,6 +435,10 @@
                     "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
                     "type": "string"
                 },
+                "className": {
+                    "description": "OpenLog extension (debug builds only): platform class name of the source view, e.g. MaterialButton.",
+                    "type": "string"
+                },
                 "inputType": {
                     "const": "button",
                     "type": "string"
@@ -498,6 +502,10 @@
                     "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
                     "type": "string"
                 },
+                "className": {
+                    "description": "OpenLog extension (debug builds only): platform class name of the source view, e.g. MaterialButton.",
+                    "type": "string"
+                },
                 "inputType": {
                     "const": "checkbox",
                     "type": "string"
@@ -552,6 +560,10 @@
                     "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
                     "type": "string"
                 },
+                "className": {
+                    "description": "OpenLog extension (debug builds only): platform class name of the source view, e.g. MaterialButton.",
+                    "type": "string"
+                },
                 "style": {
                     "$ref": "#/definitions/MobileStyles"
                 },
@@ -603,6 +615,10 @@
                     "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
                     "type": "string"
                 },
+                "className": {
+                    "description": "OpenLog extension (debug builds only): platform class name of the source view, e.g. MaterialButton.",
+                    "type": "string"
+                },
                 "style": {
                     "$ref": "#/definitions/MobileStyles"
                 },
@@ -652,6 +668,10 @@
                 },
                 "idName": {
                     "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
+                },
+                "className": {
+                    "description": "OpenLog extension (debug builds only): platform class name of the source view, e.g. MaterialButton.",
                     "type": "string"
                 },
                 "inputType": {
@@ -737,6 +757,10 @@
                     "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
                     "type": "string"
                 },
+                "className": {
+                    "description": "OpenLog extension (debug builds only): platform class name of the source view, e.g. MaterialButton.",
+                    "type": "string"
+                },
                 "style": {
                     "$ref": "#/definitions/MobileStyles"
                 },
@@ -782,6 +806,10 @@
                 },
                 "idName": {
                     "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
+                },
+                "className": {
+                    "description": "OpenLog extension (debug builds only): platform class name of the source view, e.g. MaterialButton.",
                     "type": "string"
                 },
                 "label": {
@@ -836,6 +864,10 @@
                 },
                 "idName": {
                     "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
+                },
+                "className": {
+                    "description": "OpenLog extension (debug builds only): platform class name of the source view, e.g. MaterialButton.",
                     "type": "string"
                 },
                 "inputType": {
@@ -905,6 +937,10 @@
                     "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
                     "type": "string"
                 },
+                "className": {
+                    "description": "OpenLog extension (debug builds only): platform class name of the source view, e.g. MaterialButton.",
+                    "type": "string"
+                },
                 "inputType": {
                     "const": "radio",
                     "type": "string"
@@ -959,6 +995,10 @@
                     "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
                     "type": "string"
                 },
+                "className": {
+                    "description": "OpenLog extension (debug builds only): platform class name of the source view, e.g. MaterialButton.",
+                    "type": "string"
+                },
                 "style": {
                     "$ref": "#/definitions/MobileStyles"
                 },
@@ -1004,6 +1044,10 @@
                 },
                 "idName": {
                     "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
+                },
+                "className": {
+                    "description": "OpenLog extension (debug builds only): platform class name of the source view, e.g. MaterialButton.",
                     "type": "string"
                 },
                 "style": {
@@ -1058,6 +1102,10 @@
                     "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
                     "type": "string"
                 },
+                "className": {
+                    "description": "OpenLog extension (debug builds only): platform class name of the source view, e.g. MaterialButton.",
+                    "type": "string"
+                },
                 "style": {
                     "$ref": "#/definitions/MobileStyles"
                 },
@@ -1107,6 +1155,10 @@
                 },
                 "idName": {
                     "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
+                },
+                "className": {
+                    "description": "OpenLog extension (debug builds only): platform class name of the source view, e.g. MaterialButton.",
                     "type": "string"
                 },
                 "inputType": {
@@ -1170,6 +1222,10 @@
                     "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
                     "type": "string"
                 },
+                "className": {
+                    "description": "OpenLog extension (debug builds only): platform class name of the source view, e.g. MaterialButton.",
+                    "type": "string"
+                },
                 "style": {
                     "$ref": "#/definitions/MobileStyles"
                 },
@@ -1215,6 +1271,10 @@
                 },
                 "idName": {
                     "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
+                },
+                "className": {
+                    "description": "OpenLog extension (debug builds only): platform class name of the source view, e.g. MaterialButton.",
                     "type": "string"
                 },
                 "style": {
@@ -1269,6 +1329,10 @@
                 },
                 "idName": {
                     "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
+                },
+                "className": {
+                    "description": "OpenLog extension (debug builds only): platform class name of the source view, e.g. MaterialButton.",
                     "type": "string"
                 },
                 "inputType": {
@@ -1332,6 +1396,10 @@
                     "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
                     "type": "string"
                 },
+                "className": {
+                    "description": "OpenLog extension (debug builds only): platform class name of the source view, e.g. MaterialButton.",
+                    "type": "string"
+                },
                 "inputType": {
                     "const": "toggle",
                     "type": "string"
@@ -1384,6 +1452,10 @@
                 },
                 "idName": {
                     "description": "OpenLog extension: Android resource-id name of the source view, e.g. balanceValue. Absent when the view has no id.",
+                    "type": "string"
+                },
+                "className": {
+                    "description": "OpenLog extension (debug builds only): platform class name of the source view, e.g. MaterialButton.",
                     "type": "string"
                 },
                 "style": {

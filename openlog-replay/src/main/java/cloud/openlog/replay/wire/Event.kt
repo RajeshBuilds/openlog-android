@@ -38,6 +38,19 @@ object Touch {
 }
 
 /**
+ * `tag` values for Custom (type 5) events. `keyboard` is from SPEC Part 2.2; the
+ * rest are OpenLog enrichments (screen lifecycle, app lifecycle, tap targets) that
+ * ride on the schema-unconstrained Custom payload so the rrweb player still
+ * consumes the stream unchanged.
+ */
+object CustomTag {
+    const val KEYBOARD = "keyboard"
+    const val SCREEN = "screen"
+    const val APP_LIFECYCLE = "app_lifecycle"
+    const val TAP_TARGET = "tap_target"
+}
+
+/**
  * A single recording event. `data` is kept as a [JsonElement] so that every event
  * shape (Meta / FullSnapshot / Incremental / Custom) can be serialized uniformly
  * into one NDJSON stream. Builders in [Events] produce these from typed payloads.

@@ -22,10 +22,11 @@ class DemoApp : Application() {
         OpenLog.init(
             context = this,
             config = OpenLog.Config(
-                maskAllText = false,   // DEBUG: unmask so the JSON is readable
-                maskAllImages = false, // DEBUG
+                maskAllText = false,     // DEBUG: unmask so the JSON is readable
+                maskAllImages = false,   // DEBUG
                 sampleRate = 1.0,
                 throttleMs = 1_000L,
+                debugClassNames = true,  // DEBUG: add platform class name to each node
             ),
         )
 

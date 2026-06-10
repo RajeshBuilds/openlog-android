@@ -100,6 +100,32 @@ class BuildersSchemaTest {
     }
 
     @Test
+    fun classNameIsAcceptedOnEveryWireframe() {
+        // className is an OpenLog debug extension declared on every wireframe in the vendored schema.
+        val root = Wireframe(
+            id = 5, idName = "rootContainer", className = "LinearLayout",
+            width = 412, height = 915, type = MobileNodeType.DIV,
+            childWireframes = listOf(
+                textWireframe(11).copy(className = "MaterialTextView"),
+                inputWireframe(12).copy(className = "TextInputEditText"),
+            ),
+        )
+        SchemaValidator.assertValid(line(Events.fullSnapshot(2, listOf(root))))
+    }
+
+    @Test
+    fun screenAppAndTapTargetEventsValidate() {
+        // OpenLog enrichments — all ride on the schema-unconstrained Custom payload.
+        SchemaValidator.assertValid(line(Events.screenEnter(10, "CheckoutActivity")))
+        SchemaValidator.assertValid(line(Events.screenExit(11, "CheckoutActivity")))
+        SchemaValidator.assertValid(line(Events.appForeground(12)))
+        SchemaValidator.assertValid(line(Events.appBackground(13)))
+        SchemaValidator.assertValid(line(Events.tapTarget(14, type = "Button", idName = "signInButton", label = "Sign in", x = 120, y = 340)))
+        // tap target with everything optional null still validates
+        SchemaValidator.assertValid(line(Events.tapTarget(15, type = null, idName = null, label = null, x = 1, y = 2)))
+    }
+
+    @Test
     fun customEventWithObjectPayloadValidates() {
         // A generic Custom event's payload is schema-unconstrained.
         val payload = buildJsonObject {
