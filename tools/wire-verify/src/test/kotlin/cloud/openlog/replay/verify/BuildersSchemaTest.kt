@@ -100,6 +100,20 @@ class BuildersSchemaTest {
     }
 
     @Test
+    fun classNameIsAcceptedOnEveryWireframe() {
+        // className is an OpenLog debug extension declared on every wireframe in the vendored schema.
+        val root = Wireframe(
+            id = 5, idName = "rootContainer", className = "LinearLayout",
+            width = 412, height = 915, type = MobileNodeType.DIV,
+            childWireframes = listOf(
+                textWireframe(11).copy(className = "MaterialTextView"),
+                inputWireframe(12).copy(className = "TextInputEditText"),
+            ),
+        )
+        SchemaValidator.assertValid(line(Events.fullSnapshot(2, listOf(root))))
+    }
+
+    @Test
     fun screenAppAndTapTargetEventsValidate() {
         // OpenLog enrichments — all ride on the schema-unconstrained Custom payload.
         SchemaValidator.assertValid(line(Events.screenEnter(10, "CheckoutActivity")))

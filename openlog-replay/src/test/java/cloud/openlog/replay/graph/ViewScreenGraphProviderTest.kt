@@ -129,6 +129,12 @@ class ViewScreenGraphProviderTest {
         val nodes = flatten(tree)
         assertEquals("text1", nodes.first { it.type == MobileNodeType.TEXT }.idName)
         assertNull("a view without an id has null idName", nodes.first { it.type == MobileNodeType.DIV }.idName)
+        assertTrue("className omitted by default", nodes.all { it.className == null })
+
+        val debugTree = ViewScreenGraphProvider(includeClassNames = true).snapshot(root, 1f, policy)!!
+        val debugNodes = flatten(debugTree)
+        assertEquals("TextView", debugNodes.first { it.type == MobileNodeType.TEXT }.className)
+        assertEquals("LinearLayout", debugNodes.first { it.type == MobileNodeType.DIV }.className)
     }
 
     @Test

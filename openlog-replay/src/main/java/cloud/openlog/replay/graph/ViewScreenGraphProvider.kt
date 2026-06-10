@@ -44,8 +44,14 @@ import kotlinx.serialization.json.JsonPrimitive
  * Each wireframe also carries [Wireframe.idName] — the source view's Android
  * resource-id name (e.g. `"balanceValue"`) — when the view has an id, so a
  * recording can be traced back to the XML.
+ *
+ * @param includeClassNames DEBUG ONLY. When true, each wireframe also carries the
+ *   source view's platform class name in [Wireframe.className] (raw-tree-style
+ *   fidelity for debugging capture issues). Off by default — adds volume.
  */
-class ViewScreenGraphProvider : ScreenGraphProvider {
+class ViewScreenGraphProvider(
+    private val includeClassNames: Boolean = false,
+) : ScreenGraphProvider {
 
     override fun snapshot(root: View, density: Float, policy: MaskPolicy): Wireframe? =
         root.toWireframe(density, policy, parentId = null, ancestorUnmasked = false)
@@ -71,7 +77,9 @@ class ViewScreenGraphProvider : ScreenGraphProvider {
 
             val style = buildStyle(density)
             val base = Wireframe(
-                id = id, idName = idName, x = x, y = y, width = w, height = h,
+                id = id, idName = idName,
+                className = if (includeClassNames) javaClass.simpleName else null,
+                x = x, y = y, width = w, height = h,
                 type = MobileNodeType.DIV, style = style, parentId = parentId,
             )
 

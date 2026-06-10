@@ -59,11 +59,17 @@ object InputType {
  * `"balanceValue"`), or null when the view has no id. It is an OpenLog extension
  * to the rr-mobile schema (the vendored `rr-mobile-schema.json` declares it on
  * every wireframe) that makes a recording traceable back to the XML.
+ *
+ * [className] is the source view's platform class name (e.g. `"MaterialButton"`).
+ * Also declared in the vendored schema, but it is a DEBUG aid: only populated when
+ * `OpenLog.Config.debugClassNames` is on (raw-tree-style fidelity for debugging
+ * capture issues). Off by default to keep production volume down.
  */
 @Serializable
 data class Wireframe(
     val id: Int,
     val idName: String? = null,
+    val className: String? = null,
     val x: Int = 0,
     val y: Int = 0,
     val width: Int,

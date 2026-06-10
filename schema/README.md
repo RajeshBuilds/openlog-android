@@ -31,8 +31,15 @@ OpenLog uses its own web replay player, so the contract is ours to extend.
 - **`idName`** is declared (optional, `string`) on every wireframe definition. It
   carries the source view's Android resource-id name (e.g. `"balanceValue"`) so a
   recording is traceable back to the XML. It is emitted on every node that has an
-  id. This is the one divergence from upstream; recordings are therefore **not**
-  interchangeable with PostHog's player (by design). See `wire/Wireframe.kt`.
+  id. Recordings are therefore **not** interchangeable with PostHog's player (by
+  design). See `wire/Wireframe.kt`.
+
+- **`className`** is likewise declared (optional, `string`) on every wireframe
+  definition: the source view's platform class name (e.g. `"MaterialButton"`).
+  Unlike `idName` it is a **debug aid**, only emitted when
+  `OpenLog.Config.debugClassNames` is on — it gives raw-view-tree-style fidelity
+  for debugging capture issues without a separate raw-tree export. Off by default
+  to keep production volume down.
 
 - **Custom (type 5) event tags** — these ride on the *schema-unconstrained* Custom
   `payload`, so they need no schema change and the rrweb player passes them through

@@ -41,6 +41,10 @@ object OpenLog {
      * @param throttleMs    minimum interval between snapshots of a window.
      * @param http          when set, events upload via [HttpSessionSink]; otherwise
      *                      they are written to a local NDJSON file (validation sink).
+     * @param debugClassNames DEBUG ONLY. When true, each wireframe also carries the
+     *                      source view's platform class name in `Wireframe.className`
+     *                      (e.g. `"MaterialButton"`) — raw-tree-style fidelity for
+     *                      debugging capture issues. Off by default (adds volume).
      */
     data class Config(
         val maskAllText: Boolean = true,
@@ -48,6 +52,7 @@ object OpenLog {
         val sampleRate: Double = 1.0,
         val throttleMs: Long = 1_000L,
         val http: HttpSessionSink.Config? = null,
+        val debugClassNames: Boolean = false,
     )
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -104,7 +109,7 @@ object OpenLog {
 
         val captureEngine = SessionCaptureEngine(
             context = ctx,
-            graphProvider = ViewScreenGraphProvider(),
+            graphProvider = ViewScreenGraphProvider(includeClassNames = config.debugClassNames),
             policy = policy,
             sink = sink,
             correlation = correlation,
