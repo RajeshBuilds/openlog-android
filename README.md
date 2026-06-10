@@ -23,6 +23,11 @@ stream that a web replay engine can later play back.
 - **Action-level signals** — beyond the wireframe tree and diffs, the stream carries
   `screen` enter/exit (with names → nav flow), `app_lifecycle` foreground/background,
   `tap_target` (what was tapped), and `keyboard` events, all as rrweb Custom events.
+- **Real-time scroll & input** — optional rrweb `scroll` (source 3) and `input`
+  (source 5) events for smooth scroll playback and per-keystroke input (masked),
+  instead of only sampling at the snapshot cadence. Toggle via `Config.captureScrolls`
+  / `Config.captureInputs`; main-thread cost stays negligible (scroll is throttled
+  and all emission is off-thread).
 - **Fragment-aware screen names** — single-Activity / multi-Fragment apps report the
   resumed **Fragment** class as the screen (Activity name as the fallback). androidx
   .fragment is an optional, runtime-guarded dependency.
@@ -37,6 +42,9 @@ OpenLog.init(
         maskAllText = true,
         maskAllImages = true,
         sampleRate = 1.0,
+        captureScrolls = true,     // rrweb scroll events (source 3); throttled
+        captureInputs = true,      // rrweb input events (source 5); masked
+        scrollThrottleMs = 100,    // min interval between scroll events per container
         // Omit `http` to write a local NDJSON file (great for validation);
         // provide it to batch-upload via WorkManager.
         http = HttpSessionSink.Config(

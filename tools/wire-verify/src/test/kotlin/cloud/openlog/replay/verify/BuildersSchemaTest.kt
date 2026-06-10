@@ -81,6 +81,13 @@ class BuildersSchemaTest {
     }
 
     @Test
+    fun scrollAndInputValidate() {
+        SchemaValidator.assertValid(line(Events.scroll(7, id = 42, x = 0, y = 540)))
+        SchemaValidator.assertValid(line(Events.input(8, id = 42, text = "******")))
+        SchemaValidator.assertValid(line(Events.input(9, id = 42, isChecked = true)))
+    }
+
+    @Test
     fun keyboardValidates() {
         SchemaValidator.assertValid(line(Events.keyboardOpen(7, 320)))
         SchemaValidator.assertValid(line(Events.keyboardClosed(8)))

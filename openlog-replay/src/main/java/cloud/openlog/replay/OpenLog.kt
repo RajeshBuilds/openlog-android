@@ -41,6 +41,14 @@ object OpenLog {
      * @param throttleMs    minimum interval between snapshots of a window.
      * @param http          when set, events upload via [HttpSessionSink]; otherwise
      *                      they are written to a local NDJSON file (validation sink).
+     * @param captureScrolls capture scroll gestures as rrweb scroll events (source 3)
+     *                      for smooth scroll playback. Main-thread cost is negligible
+     *                      (throttled by [scrollThrottleMs]); adds recording volume
+     *                      while scrolling.
+     * @param captureInputs capture text/input changes in real time as rrweb input
+     *                      events (source 5) instead of only at the next snapshot.
+     *                      Input values are masked at source.
+     * @param scrollThrottleMs minimum interval between scroll events per container.
      * @param debugClassNames DEBUG ONLY. When true, each wireframe also carries the
      *                      source view's platform class name in `Wireframe.className`
      *                      (e.g. `"MaterialButton"`) — raw-tree-style fidelity for
@@ -52,6 +60,9 @@ object OpenLog {
         val sampleRate: Double = 1.0,
         val throttleMs: Long = 1_000L,
         val http: HttpSessionSink.Config? = null,
+        val captureScrolls: Boolean = true,
+        val captureInputs: Boolean = true,
+        val scrollThrottleMs: Long = 100L,
         val debugClassNames: Boolean = false,
     )
 
@@ -115,6 +126,9 @@ object OpenLog {
             correlation = correlation,
             density = density,
             throttleMs = config.throttleMs,
+            captureScrolls = config.captureScrolls,
+            captureInputs = config.captureInputs,
+            scrollThrottleMs = config.scrollThrottleMs,
         )
         engine = captureEngine
         onMain { captureEngine.start() }
