@@ -20,6 +20,9 @@ stream that a web replay engine can later play back.
   `rr-mobile-schema.json` in CI.
 - **Consent-gated + sampled** — capture only runs with explicit consent and within
   the configured session sample rate.
+- **Action-level signals** — beyond the wireframe tree and diffs, the stream carries
+  `screen` enter/exit (with names → nav flow), `app_lifecycle` foreground/background,
+  `tap_target` (what was tapped), and `keyboard` events, all as rrweb Custom events.
 
 ## Quick start
 

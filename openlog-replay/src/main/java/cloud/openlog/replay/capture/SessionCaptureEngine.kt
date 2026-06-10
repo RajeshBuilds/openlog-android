@@ -5,13 +5,19 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.Window
+import android.widget.TextView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import cloud.openlog.replay.correlate.Correlation
 import cloud.openlog.replay.diff.SnapshotDiff
 import cloud.openlog.replay.graph.ScreenGraphProvider
 import cloud.openlog.replay.mask.MaskPolicy
+import cloud.openlog.replay.mask.maskedOf
 import cloud.openlog.replay.sink.SessionSink
 import cloud.openlog.replay.wire.Event
 import cloud.openlog.replay.wire.Events
@@ -63,8 +69,22 @@ class SessionCaptureEngine(
     @Volatile
     private var started = false
 
+    /** The current foreground screen name. Touched only on the capture thread. */
+    private var currentScreen: String? = null
+
     private val rootViewsListener = OnRootViewsChangedListener { view, added ->
         if (added) attach(view) else detach(view)
+    }
+
+    /** App foreground/background via the process lifecycle (emitted off the main thread). */
+    private val lifecycleObserver = object : DefaultLifecycleObserver {
+        override fun onStart(owner: LifecycleOwner) {
+            executor.execute { runCatching { emit(Events.appForeground(System.currentTimeMillis())) } }
+        }
+
+        override fun onStop(owner: LifecycleOwner) {
+            executor.execute { runCatching { emit(Events.appBackground(System.currentTimeMillis())) } }
+        }
     }
 
     private class Tracking(
@@ -81,6 +101,8 @@ class SessionCaptureEngine(
     fun start() {
         if (started) return
         started = true
+        // App foreground/background events (fires onStart immediately for the current state).
+        runCatching { ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleObserver) }
         // Attach to every existing window, then keep up with new ones (T2).
         Curtains.rootViews.toList().forEach { attach(it) }
         Curtains.onRootViewsChangedListeners += rootViewsListener
@@ -89,9 +111,12 @@ class SessionCaptureEngine(
     fun stop() {
         if (!started) return
         started = false
+        runCatching { ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleObserver) }
         Curtains.onRootViewsChangedListeners -= rootViewsListener
         synchronized(tracked) { tracked.keys.toList() }.forEach { detach(it) }
         executor.execute {
+            currentScreen?.let { runCatching { emit(Events.screenExit(System.currentTimeMillis(), it)) } }
+            currentScreen = null
             runCatching { sink.flush() }
         }
     }
@@ -161,6 +186,8 @@ class SessionCaptureEngine(
             val href = hrefOf(decor)
             val now = System.currentTimeMillis()
 
+            handleScreenTransition(href, now)
+
             val screenChanged = href != status.screenHref
             if (!status.sentFullSnapshot || screenChanged) {
                 emit(Events.meta(now, href, decor.width.norm(), decor.height.norm()))
@@ -178,6 +205,16 @@ class SessionCaptureEngine(
         } catch (_: Throwable) {
             // Never crash the capture thread (Part 4).
         }
+    }
+
+    // ---- screen lifecycle (OpenLog extension) ------------------------------
+
+    /** Emit screen enter/exit Custom events as the foreground screen changes. */
+    private fun handleScreenTransition(href: String, now: Long) {
+        if (href == currentScreen) return
+        currentScreen?.let { emit(Events.screenExit(now, it)) }
+        emit(Events.screenEnter(now, href))
+        currentScreen = href
     }
 
     // ---- keyboard (T7) -----------------------------------------------------
@@ -210,13 +247,60 @@ class SessionCaptureEngine(
             try {
                 val x = (copy.rawX / density).roundToInt()
                 val y = (copy.rawY / density).roundToInt()
-                val id = ref.get()?.let { System.identityHashCode(it) } ?: ROOT_ID_FALLBACK
-                emit(Events.touch(System.currentTimeMillis(), type, id, x, y))
+                val decor = ref.get()
+                // Hit-test the tapped view so the touch id points at the real node and
+                // we can describe the target (type / idName / label).
+                val target = decor?.let { runCatching { findTouchedView(it, copy.rawX, copy.rawY) }.getOrNull() }
+                val node = target ?: decor
+                val id = node?.let { System.identityHashCode(it) } ?: ROOT_ID_FALLBACK
+                val now = System.currentTimeMillis()
+                emit(Events.touch(now, type, id, x, y))
+                if (type == Touch.START && target != null) {
+                    emit(
+                        Events.tapTarget(
+                            timestamp = now,
+                            type = target.javaClass.simpleName,
+                            idName = target.resourceEntryName(),
+                            label = maskedLabel(target),
+                            x = x, y = y,
+                        ),
+                    )
+                }
             } catch (_: Throwable) {
             } finally {
                 copy.recycle()
             }
         }
+    }
+
+    /** Deepest visible view containing the raw-pixel point (topmost child wins). */
+    private fun findTouchedView(root: View, x: Float, y: Float): View? {
+        if (root.visibility != View.VISIBLE) return null
+        val loc = IntArray(2).also { root.getLocationOnScreen(it) }
+        val left = loc[0]
+        val top = loc[1]
+        if (x < left || y < top || x > left + root.width || y > top + root.height) return null
+        if (root is ViewGroup) {
+            for (i in root.childCount - 1 downTo 0) {
+                val child = root.getChildAt(i) ?: continue
+                findTouchedView(child, x, y)?.let { return it }
+            }
+        }
+        return root
+    }
+
+    /** The view's resource-id entry name (e.g. "signInButton"), or null. */
+    private fun View.resourceEntryName(): String? {
+        val vid = id
+        if (vid == View.NO_ID) return null
+        return runCatching { resources.getResourceEntryName(vid) }.getOrNull()
+    }
+
+    /** The tapped view's label (contentDescription or text), masked per policy. */
+    private fun maskedLabel(v: View): String? {
+        val raw = v.contentDescription ?: (v as? TextView)?.text
+        if (raw.isNullOrEmpty()) return null
+        return if (policy.maskText(v, ancestorUnmasked = false)) maskedOf(raw) else raw.toString()
     }
 
     // ---- helpers -----------------------------------------------------------

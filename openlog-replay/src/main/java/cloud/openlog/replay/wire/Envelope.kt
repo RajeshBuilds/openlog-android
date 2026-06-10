@@ -84,6 +84,43 @@ data class KeyboardClosed(
     val open: Boolean = false,
 )
 
+/** Screen lifecycle payload (`action` = "enter"/"exit", `name` = screen/Activity name). */
+@Serializable
+data class ScreenPayload(
+    val action: String,
+    val name: String,
+)
+
+/** App lifecycle payload (`state` = "foreground"/"background"). */
+@Serializable
+data class AppLifecyclePayload(
+    val state: String,
+)
+
+/**
+ * Tap-target payload — what the user actually tapped, so a reader can follow the
+ * action without hit-testing coordinates. [label] is mask-aware (asterisks when
+ * the view's text would be masked).
+ */
+@Serializable
+data class TapTargetPayload(
+    val type: String? = null,
+    val idName: String? = null,
+    val label: String? = null,
+    val x: Int,
+    val y: Int,
+)
+
+object ScreenAction {
+    const val ENTER = "enter"
+    const val EXIT = "exit"
+}
+
+object AppState {
+    const val FOREGROUND = "foreground"
+    const val BACKGROUND = "background"
+}
+
 // ---------------------------------------------------------------------------
 // Builders (T1). Each returns an Event whose `data` is the encoded payload.
 // Every builder's output validates against rr-mobile-schema.json.
@@ -137,11 +174,31 @@ object Events {
 
     /** Custom (5) keyboard-open event with IME height (density-normalized). */
     fun keyboardOpen(timestamp: Long, height: Int): Event =
-        Event(EventType.CUSTOM, timestamp, dataOf(CustomData("keyboard", dataOf(KeyboardOpen(height = height)))))
+        Event(EventType.CUSTOM, timestamp, dataOf(CustomData(CustomTag.KEYBOARD, dataOf(KeyboardOpen(height = height)))))
 
     /** Custom (5) keyboard-closed event. */
     fun keyboardClosed(timestamp: Long): Event =
-        Event(EventType.CUSTOM, timestamp, dataOf(CustomData("keyboard", dataOf(KeyboardClosed()))))
+        Event(EventType.CUSTOM, timestamp, dataOf(CustomData(CustomTag.KEYBOARD, dataOf(KeyboardClosed()))))
+
+    /** Custom (5) screen-enter event (OpenLog extension). [name] is the screen/Activity name. */
+    fun screenEnter(timestamp: Long, name: String): Event =
+        Event(EventType.CUSTOM, timestamp, dataOf(CustomData(CustomTag.SCREEN, dataOf(ScreenPayload(ScreenAction.ENTER, name)))))
+
+    /** Custom (5) screen-exit event (OpenLog extension). */
+    fun screenExit(timestamp: Long, name: String): Event =
+        Event(EventType.CUSTOM, timestamp, dataOf(CustomData(CustomTag.SCREEN, dataOf(ScreenPayload(ScreenAction.EXIT, name)))))
+
+    /** Custom (5) app-foreground event (OpenLog extension). */
+    fun appForeground(timestamp: Long): Event =
+        Event(EventType.CUSTOM, timestamp, dataOf(CustomData(CustomTag.APP_LIFECYCLE, dataOf(AppLifecyclePayload(AppState.FOREGROUND)))))
+
+    /** Custom (5) app-background event (OpenLog extension). */
+    fun appBackground(timestamp: Long): Event =
+        Event(EventType.CUSTOM, timestamp, dataOf(CustomData(CustomTag.APP_LIFECYCLE, dataOf(AppLifecyclePayload(AppState.BACKGROUND)))))
+
+    /** Custom (5) tap-target event (OpenLog extension): what the user tapped. */
+    fun tapTarget(timestamp: Long, type: String?, idName: String?, label: String?, x: Int, y: Int): Event =
+        Event(EventType.CUSTOM, timestamp, dataOf(CustomData(CustomTag.TAP_TARGET, dataOf(TapTargetPayload(type, idName, label, x, y)))))
 
     /** Generic Custom (5) event. */
     fun custom(timestamp: Long, tag: String, payload: JsonElement = JsonObject(emptyMap())): Event =

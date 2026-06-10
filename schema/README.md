@@ -33,3 +33,13 @@ OpenLog uses its own web replay player, so the contract is ours to extend.
   recording is traceable back to the XML. It is emitted on every node that has an
   id. This is the one divergence from upstream; recordings are therefore **not**
   interchangeable with PostHog's player (by design). See `wire/Wireframe.kt`.
+
+- **Custom (type 5) event tags** — these ride on the *schema-unconstrained* Custom
+  `payload`, so they need no schema change and the rrweb player passes them through
+  unchanged. They give a reader the "what happened" story (and let a tool draw a nav
+  graph from the screen sequence):
+  - `screen` — `{ action: "enter"|"exit", name }` as the foreground screen changes.
+  - `app_lifecycle` — `{ state: "foreground"|"background" }` (process lifecycle).
+  - `tap_target` — `{ type, idName, label, x, y }`: what the user tapped (label is
+    mask-aware). The accompanying touch event's `id` points at the tapped node.
+  - `keyboard` — `{ open, height? }` (SPEC Part 2.2).
