@@ -34,4 +34,6 @@ jobs:
           java-version: "17"
       - uses: android-actions/setup-android@v3
       - name: Assemble, test, lint
-        run: ./gradlew :openlog-replay:assembleRelease :openlog-replay:testReleaseUnitTest :openlog-replay:lintRelease --no-daemon
+        # AGP 9 builds host (unit) tests for a single build type only, so the
+        # task is testDebugUnitTest — testReleaseUnitTest no longer exists.
+        run: ./gradlew :openlog-replay:assembleRelease :openlog-replay:testDebugUnitTest :openlog-replay:lintRelease --no-daemon

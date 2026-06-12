@@ -1,10 +1,16 @@
 plugins {
-    kotlin("jvm") version "2.0.21"
-    kotlin("plugin.serialization") version "2.0.21"
+    kotlin("jvm") version "2.2.10"
+    kotlin("plugin.serialization") version "2.2.10"
 }
 
 repositories {
     mavenCentral()
+}
+
+// Pin the build to a JVM the Kotlin plugin supports, regardless of the
+// JDK that happens to launch Gradle.
+kotlin {
+    jvmToolchain(17)
 }
 
 dependencies {
