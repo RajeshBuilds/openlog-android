@@ -254,13 +254,15 @@ class SessionCaptureEngine(
             if (!decor.isAttachedToWindow) return
             // Skip animation-only redraws so animating screens don't spam (Part 4).
             if (decor.hasTransientState()) return
-            // Skip windows belonging to an Activity that is no longer current (e.g.
-            // the outgoing window during a transition animation) — capturing them
-            // would emit a stale tree mislabeled with the new screen's name and
-            // duplicate the new screen's Meta/FullSnapshot.
+            // Only the current foreground Activity's window is "the screen". Skip
+            // every other tracked window — the outgoing Activity during a transition,
+            // a teardown decor whose context no longer resolves to an Activity, or a
+            // system/overlay window — so we never emit a second, mislabeled snapshot
+            // for the same screen. (Before the first Activity resumes, currentActivity
+            // is null and we capture whatever window exists.)
             val decorActivity = activityNameOf(decor)
             val currentActivity = screenTracker.currentActivity
-            if (decorActivity != null && currentActivity != null && decorActivity != currentActivity) return
+            if (currentActivity != null && decorActivity != currentActivity) return
 
             val seqBefore = status.drawSequence.get()
             val root: Wireframe = graphProvider.snapshot(decor, density, policy) ?: return
@@ -268,11 +270,11 @@ class SessionCaptureEngine(
             if (status.drawSequence.get() != seqBefore) return
 
             val wireframes = listOf(root)
-            // Prefer the resumed Fragment/Activity name from the tracker; fall back to
-            // the decor's hosting Activity when the tracker has nothing yet. Screen
-            // enter/exit markers are emitted by the ScreenTracker at lifecycle time;
-            // here we only (re)emit Meta + FullSnapshot when the screen changes.
-            val screen = screenTracker.currentScreen ?: hrefOf(decor)
+            // Name this window by its current Fragment (when it's the current Activity)
+            // or the Activity itself. Screen enter/exit markers are emitted by the
+            // ScreenTracker at lifecycle time; here we only (re)emit Meta + FullSnapshot
+            // when the screen changes.
+            val screen = screenTracker.currentScreen ?: decorActivity ?: hrefOf(decor)
             val now = System.currentTimeMillis()
 
             val screenChanged = screen != status.screenHref
