@@ -45,7 +45,11 @@ OpenLog uses its own web replay player, so the contract is ours to extend.
   `payload`, so they need no schema change and the rrweb player passes them through
   unchanged. They give a reader the "what happened" story (and let a tool draw a nav
   graph from the screen sequence):
-  - `screen` — `{ action: "enter"|"exit", name }` as the foreground screen changes.
+  - `screen` — `{ action: "enter"|"exit", name, kind?, parent? }` as the foreground
+    screen changes. `kind` is `"activity"` or `"fragment"`; fragment screens carry
+    their host Activity in `parent`, so the stream reads as nested scopes
+    (activity enter → fragment transitions inside it → activity exit) and a viewer
+    can indent/nest the flow.
   - `app_lifecycle` — `{ state: "foreground"|"background" }` (process lifecycle).
   - `tap_target` — `{ type, idName, label, x, y }`: what the user tapped (label is
     mask-aware). The accompanying touch event's `id` points at the tapped node.

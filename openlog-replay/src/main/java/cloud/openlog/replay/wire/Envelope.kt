@@ -102,12 +102,24 @@ data class KeyboardClosed(
     val open: Boolean = false,
 )
 
-/** Screen lifecycle payload (`action` = "enter"/"exit", `name` = screen/Activity name). */
+/**
+ * Screen lifecycle payload (`action` = "enter"/"exit", `name` = screen name).
+ * [kind] distinguishes the two nesting levels ("activity" | "fragment") and
+ * [parent] names the host Activity for fragment screens, so a viewer can render
+ * the flow as: activity enter → fragment transitions inside it → activity exit.
+ */
 @Serializable
 data class ScreenPayload(
     val action: String,
     val name: String,
+    val kind: String? = null,
+    val parent: String? = null,
 )
+
+object ScreenKind {
+    const val ACTIVITY = "activity"
+    const val FRAGMENT = "fragment"
+}
 
 /** App lifecycle payload (`state` = "foreground"/"background"). */
 @Serializable
@@ -206,13 +218,17 @@ object Events {
     fun keyboardClosed(timestamp: Long): Event =
         Event(EventType.CUSTOM, timestamp, dataOf(CustomData(CustomTag.KEYBOARD, dataOf(KeyboardClosed()))))
 
-    /** Custom (5) screen-enter event (OpenLog extension). [name] is the screen/Activity name. */
-    fun screenEnter(timestamp: Long, name: String): Event =
-        Event(EventType.CUSTOM, timestamp, dataOf(CustomData(CustomTag.SCREEN, dataOf(ScreenPayload(ScreenAction.ENTER, name)))))
+    /**
+     * Custom (5) screen-enter event (OpenLog extension). [kind] is
+     * [ScreenKind.ACTIVITY]/[ScreenKind.FRAGMENT]; [parent] names the host Activity
+     * for fragment screens.
+     */
+    fun screenEnter(timestamp: Long, name: String, kind: String? = null, parent: String? = null): Event =
+        Event(EventType.CUSTOM, timestamp, dataOf(CustomData(CustomTag.SCREEN, dataOf(ScreenPayload(ScreenAction.ENTER, name, kind, parent)))))
 
     /** Custom (5) screen-exit event (OpenLog extension). */
-    fun screenExit(timestamp: Long, name: String): Event =
-        Event(EventType.CUSTOM, timestamp, dataOf(CustomData(CustomTag.SCREEN, dataOf(ScreenPayload(ScreenAction.EXIT, name)))))
+    fun screenExit(timestamp: Long, name: String, kind: String? = null, parent: String? = null): Event =
+        Event(EventType.CUSTOM, timestamp, dataOf(CustomData(CustomTag.SCREEN, dataOf(ScreenPayload(ScreenAction.EXIT, name, kind, parent)))))
 
     /** Custom (5) app-foreground event (OpenLog extension). */
     fun appForeground(timestamp: Long): Event =

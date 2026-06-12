@@ -125,6 +125,11 @@ class BuildersSchemaTest {
         // OpenLog enrichments — all ride on the schema-unconstrained Custom payload.
         SchemaValidator.assertValid(line(Events.screenEnter(10, "CheckoutActivity")))
         SchemaValidator.assertValid(line(Events.screenExit(11, "CheckoutActivity")))
+        // Hierarchical screen scopes: activity enter/exit + fragment with parent.
+        SchemaValidator.assertValid(line(Events.screenEnter(12, "DashboardActivity", kind = "activity")))
+        SchemaValidator.assertValid(line(Events.screenEnter(13, "HomeFragment", kind = "fragment", parent = "DashboardActivity")))
+        SchemaValidator.assertValid(line(Events.screenExit(14, "HomeFragment", kind = "fragment", parent = "DashboardActivity")))
+        SchemaValidator.assertValid(line(Events.screenExit(15, "DashboardActivity", kind = "activity")))
         SchemaValidator.assertValid(line(Events.appForeground(12)))
         SchemaValidator.assertValid(line(Events.appBackground(13)))
         SchemaValidator.assertValid(line(Events.tapTarget(14, type = "Button", idName = "signInButton", label = "Sign in", x = 120, y = 340)))

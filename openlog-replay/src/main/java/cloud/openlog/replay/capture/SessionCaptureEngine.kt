@@ -21,6 +21,8 @@ import cloud.openlog.replay.mask.maskedOf
 import cloud.openlog.replay.sink.SessionSink
 import cloud.openlog.replay.wire.Event
 import cloud.openlog.replay.wire.Events
+import cloud.openlog.replay.wire.ScreenAction
+import cloud.openlog.replay.wire.ScreenKind
 import cloud.openlog.replay.wire.Touch
 import cloud.openlog.replay.wire.Wireframe
 import curtains.Curtains
@@ -85,21 +87,29 @@ class SessionCaptureEngine(
     @Volatile
     private var started = false
 
-    /** The last screen name we emitted enter/exit for. Touched only on the capture thread. */
-    private var lastEmittedScreen: String? = null
-
     /**
-     * Resolves Activity/Fragment screen names from lifecycle callbacks and reports
-     * transitions *at the moment they happen* — so screen enter/exit events carry the
-     * real transition time, not a periodic-tick time. On a change we emit the markers
-     * (stamped at the callback time) and force a prompt snapshot of the new screen so
-     * its Meta/FullSnapshot land right after, ahead of any interaction with it.
+     * Resolves the Activity/Fragment screen hierarchy from lifecycle callbacks and
+     * reports transitions *at the moment they happen* — so screen enter/exit events
+     * carry the real transition time, not a periodic-tick time. Transitions arrive
+     * as an ordered batch (e.g. exit fragment → exit activity → enter activity) so
+     * the stream reads as nested scopes; we emit the markers (stamped at the
+     * callback time) and force a prompt snapshot of the new screen so its
+     * Meta/FullSnapshot land right after, ahead of any interaction with it.
      */
-    private val screenTracker = ScreenTracker { old, new, timestampMs ->
+    private val screenTracker = ScreenTracker { changes, timestampMs ->
         executor.execute {
-            old?.let { runCatching { emit(Events.screenExit(timestampMs, it)) } }
-            runCatching { emit(Events.screenEnter(timestampMs, new)) }
-            lastEmittedScreen = new
+            changes.forEach { change ->
+                runCatching {
+                    emit(
+                        when (change.action) {
+                            ScreenAction.ENTER ->
+                                Events.screenEnter(timestampMs, change.name, change.kind, change.parent)
+                            else ->
+                                Events.screenExit(timestampMs, change.name, change.kind, change.parent)
+                        },
+                    )
+                }
+            }
         }
         requestPromptSnapshot()
     }
@@ -147,13 +157,18 @@ class SessionCaptureEngine(
     fun stop() {
         if (!started) return
         started = false
+        // Capture the open screen scopes before uninstalling, then close them in
+        // nesting order (fragment first, then its host activity).
+        val openFragment = screenTracker.currentFragment
+        val openActivity = screenTracker.currentActivity
         screenTracker.uninstall()
         runCatching { ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleObserver) }
         Curtains.onRootViewsChangedListeners -= rootViewsListener
         synchronized(tracked) { tracked.keys.toList() }.forEach { detach(it) }
         executor.execute {
-            lastEmittedScreen?.let { runCatching { emit(Events.screenExit(System.currentTimeMillis(), it)) } }
-            lastEmittedScreen = null
+            val now = System.currentTimeMillis()
+            openFragment?.let { runCatching { emit(Events.screenExit(now, it, ScreenKind.FRAGMENT, openActivity)) } }
+            openActivity?.let { runCatching { emit(Events.screenExit(now, it, ScreenKind.ACTIVITY)) } }
             runCatching { sink.flush() }
         }
     }
@@ -239,6 +254,13 @@ class SessionCaptureEngine(
             if (!decor.isAttachedToWindow) return
             // Skip animation-only redraws so animating screens don't spam (Part 4).
             if (decor.hasTransientState()) return
+            // Skip windows belonging to an Activity that is no longer current (e.g.
+            // the outgoing window during a transition animation) — capturing them
+            // would emit a stale tree mislabeled with the new screen's name and
+            // duplicate the new screen's Meta/FullSnapshot.
+            val decorActivity = activityNameOf(decor)
+            val currentActivity = screenTracker.currentActivity
+            if (decorActivity != null && currentActivity != null && decorActivity != currentActivity) return
 
             val seqBefore = status.drawSequence.get()
             val root: Wireframe = graphProvider.snapshot(decor, density, policy) ?: return
@@ -366,10 +388,14 @@ class SessionCaptureEngine(
 
     private fun Int.norm(): Int = (this / density).roundToInt()
 
-    private fun hrefOf(view: View): String {
+    private fun hrefOf(view: View): String =
+        activityNameOf(view) ?: view.javaClass.simpleName
+
+    /** The simple name of the Activity hosting [view]'s window, or null for non-Activity windows. */
+    private fun activityNameOf(view: View): String? {
         var ctx: Context? = view.context
         while (ctx is ContextWrapper && ctx !is Activity) ctx = ctx.baseContext
-        return (ctx as? Activity)?.javaClass?.simpleName ?: view.javaClass.simpleName
+        return (ctx as? Activity)?.javaClass?.simpleName
     }
 
     private class NamedThreadFactory(private val name: String) : ThreadFactory {
