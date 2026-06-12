@@ -86,6 +86,17 @@ The `:app` module is a small host app that exercises the SDK end to end:
 
 It reads the active session via `OpenLog.currentSessionFile()` and `OpenLog.flush()`.
 
+### Running from Android Studio
+
+A shared run configuration is committed at `.run/app.run.xml`, so an **app** run
+configuration appears automatically when you open the project — just pick a
+device/emulator and hit Run.
+
+If the Run button is greyed out (a stale IDE import, or the config's `Module` shows
+empty): open the configurations dropdown → **Edit Configurations…** → **+** →
+**Android App** → set **Module** to the `app` module (`openlog-android.app.main`) →
+**Launch: Default Activity** → OK.
+
 ## Architecture (maps to SPEC tasks)
 
 | Package | Responsibility | SPEC |
