@@ -17,12 +17,19 @@ import androidx.fragment.app.FragmentManager
  * (Jetpack Navigation, bottom-nav, etc.) report a per-fragment screen rather than
  * one Activity name for everything.
  *
+ * Screen changes are reported through [onChange] **at lifecycle-callback time** (the
+ * moment the screen actually became foreground), so screen enter/exit events carry
+ * the real transition timestamp — not the time a periodic capture tick happened to
+ * notice. Every event's timestamp must be when the thing happened.
+ *
  * androidx.fragment is an OPTIONAL dependency (`compileOnly`): the fragment-touching
  * code lives in [FragmentScreenBinder], which is only loaded after a runtime check
  * confirms the class exists, so hosts without fragments never hit a
  * `NoClassDefFoundError`.
  */
-internal class ScreenTracker {
+internal class ScreenTracker(
+    private val onChange: (old: String?, new: String, timestampMs: Long) -> Unit,
+) {
 
     @Volatile
     var currentScreen: String? = null
@@ -30,13 +37,21 @@ internal class ScreenTracker {
 
     private var application: Application? = null
 
+    /** Main thread. Reports the change with the wall-clock time it happened. */
+    private fun setScreen(name: String) {
+        if (name == currentScreen) return
+        val old = currentScreen
+        currentScreen = name
+        runCatching { onChange(old, name, System.currentTimeMillis()) }
+    }
+
     private val callbacks = object : Application.ActivityLifecycleCallbacks {
         override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
             FragmentScreens.attachIfPossible(activity, this@ScreenTracker)
         }
 
         override fun onActivityResumed(activity: Activity) {
-            currentScreen = activity.javaClass.simpleName
+            setScreen(activity.javaClass.simpleName)
         }
 
         override fun onActivityStarted(activity: Activity) {}
@@ -60,7 +75,7 @@ internal class ScreenTracker {
 
     /** Called (on the main thread) by the fragment binder when a fragment becomes current. */
     fun onFragmentScreen(name: String) {
-        currentScreen = name
+        setScreen(name)
     }
 }
 

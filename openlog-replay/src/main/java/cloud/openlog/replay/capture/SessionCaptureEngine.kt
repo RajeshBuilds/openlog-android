@@ -53,7 +53,7 @@ class SessionCaptureEngine(
     private val sink: SessionSink,
     private val correlation: Correlation,
     private val density: Float,
-    throttleMs: Long = 1_000L,
+    private val throttleMs: Long = 1_000L,
     captureScrolls: Boolean = true,
     captureInputs: Boolean = true,
     scrollThrottleMs: Long = 100L,
@@ -62,8 +62,6 @@ class SessionCaptureEngine(
 
     private val executor: ScheduledExecutorService =
         Executors.newSingleThreadScheduledExecutor(NamedThreadFactory("openlog-capture"))
-
-    private val throttler = Throttler(throttleMs, executor)
 
     /** Real-time scroll/input capture (rrweb source 3/5). Null when both are disabled. */
     private val instrumenter: InteractionInstrumenter? =
@@ -90,8 +88,21 @@ class SessionCaptureEngine(
     /** The last screen name we emitted enter/exit for. Touched only on the capture thread. */
     private var lastEmittedScreen: String? = null
 
-    /** Resolves Activity/Fragment screen names (off the capture thread, via lifecycle callbacks). */
-    private val screenTracker = ScreenTracker()
+    /**
+     * Resolves Activity/Fragment screen names from lifecycle callbacks and reports
+     * transitions *at the moment they happen* — so screen enter/exit events carry the
+     * real transition time, not a periodic-tick time. On a change we emit the markers
+     * (stamped at the callback time) and force a prompt snapshot of the new screen so
+     * its Meta/FullSnapshot land right after, ahead of any interaction with it.
+     */
+    private val screenTracker = ScreenTracker { old, new, timestampMs ->
+        executor.execute {
+            old?.let { runCatching { emit(Events.screenExit(timestampMs, it)) } }
+            runCatching { emit(Events.screenEnter(timestampMs, new)) }
+            lastEmittedScreen = new
+        }
+        requestPromptSnapshot()
+    }
 
     private val rootViewsListener = OnRootViewsChangedListener { view, added ->
         if (added) attach(view) else detach(view)
@@ -115,6 +126,9 @@ class SessionCaptureEngine(
         val viewRef: WeakReference<View>,
         // Weak so the value never pins the WeakHashMap key (Window -> decor).
         val windowRef: WeakReference<Window>,
+        // Per-window throttle so a newly-shown screen's first snapshot is prompt
+        // (leading edge) instead of waiting behind another window's recent capture.
+        val throttler: Throttler,
     )
 
     // ---- lifecycle ---------------------------------------------------------
@@ -162,6 +176,7 @@ class SessionCaptureEngine(
 
         val status = SnapshotStatus()
         val ref = WeakReference(decor)
+        val throttler = Throttler(throttleMs, executor)
 
         val drawTrigger = DrawTrigger {
             // Main thread: bump the draw counter and enqueue a throttled capture.
@@ -178,7 +193,7 @@ class SessionCaptureEngine(
 
         val window = decor.phoneWindow
 
-        tracked[decor] = Tracking(status, drawTrigger, touchInterceptor, ref, WeakReference(window))
+        tracked[decor] = Tracking(status, drawTrigger, touchInterceptor, ref, WeakReference(window), throttler)
 
         drawTrigger.register(decor)
         runCatching { window?.touchEventInterceptors?.add(0, touchInterceptor) }
@@ -186,6 +201,27 @@ class SessionCaptureEngine(
         // Kick an initial capture so a static screen is recorded without waiting for a redraw.
         throttler.submit { captureFrame(ref, status) }
         instrumenter?.onDraw(decor)
+    }
+
+    /**
+     * Force a prompt snapshot of the tracked windows shortly after a screen change,
+     * bypassing the throttle, so the new screen's Meta/FullSnapshot land right after
+     * the screen-enter marker (rather than up to one throttle interval later). Each
+     * [captureFrame] self-guards: detached/unlaid windows are skipped, and an
+     * unchanged tree emits nothing.
+     */
+    private fun requestPromptSnapshot() {
+        runCatching {
+            executor.schedule(
+                {
+                    synchronized(tracked) { tracked.values.toList() }.forEach {
+                        captureFrame(it.viewRef, it.status)
+                    }
+                },
+                PROMPT_SNAPSHOT_DELAY_MS,
+                TimeUnit.MILLISECONDS,
+            )
+        }
     }
 
     private fun detach(decor: View) {
@@ -211,11 +247,11 @@ class SessionCaptureEngine(
 
             val wireframes = listOf(root)
             // Prefer the resumed Fragment/Activity name from the tracker; fall back to
-            // the decor's hosting Activity when the tracker has nothing yet.
+            // the decor's hosting Activity when the tracker has nothing yet. Screen
+            // enter/exit markers are emitted by the ScreenTracker at lifecycle time;
+            // here we only (re)emit Meta + FullSnapshot when the screen changes.
             val screen = screenTracker.currentScreen ?: hrefOf(decor)
             val now = System.currentTimeMillis()
-
-            handleScreenTransition(screen, now)
 
             val screenChanged = screen != status.screenHref
             if (!status.sentFullSnapshot || screenChanged) {
@@ -234,16 +270,6 @@ class SessionCaptureEngine(
         } catch (_: Throwable) {
             // Never crash the capture thread (Part 4).
         }
-    }
-
-    // ---- screen lifecycle (OpenLog extension) ------------------------------
-
-    /** Emit screen enter/exit Custom events as the foreground screen changes. */
-    private fun handleScreenTransition(screen: String, now: Long) {
-        if (screen == lastEmittedScreen) return
-        lastEmittedScreen?.let { emit(Events.screenExit(now, it)) }
-        emit(Events.screenEnter(now, screen))
-        lastEmittedScreen = screen
     }
 
     // ---- keyboard (T7) -----------------------------------------------------
@@ -354,5 +380,8 @@ class SessionCaptureEngine(
     companion object {
         /** Touch fallback id when the touched wireframe is unknown (Part 2.2: root id). */
         const val ROOT_ID_FALLBACK = 5
+
+        /** Delay before the post-transition forced snapshot, to let the new screen lay out. */
+        const val PROMPT_SNAPSHOT_DELAY_MS = 48L
     }
 }
