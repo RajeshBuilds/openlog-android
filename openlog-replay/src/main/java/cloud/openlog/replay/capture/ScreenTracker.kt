@@ -7,20 +7,29 @@ import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
+import cloud.openlog.replay.wire.ScreenAction
+import cloud.openlog.replay.wire.ScreenKind
 
 /**
- * Tracks the current foreground screen name.
+ * Tracks the foreground screen as a two-level hierarchy: the resumed **Activity**
+ * (via `ActivityLifecycleCallbacks`) and, when androidx.fragment is on the host
+ * classpath, the resumed **Fragment** inside it. Transitions are reported as an
+ * ordered batch of [Change]s so the stream reads as nested scopes:
  *
- * Baseline is the resumed **Activity** class name (via `ActivityLifecycleCallbacks`).
- * When androidx.fragment is present on the host classpath, it is refined to the
- * resumed **Fragment** class name, so single-Activity / multi-Fragment apps
- * (Jetpack Navigation, bottom-nav, etc.) report a per-fragment screen rather than
- * one Activity name for everything.
+ * ```
+ * enter LoginActivity            (activity)
+ *   enter CredentialsFragment    (fragment, parent = LoginActivity)
+ *   exit  CredentialsFragment
+ *   enter OtpFragment            (fragment, parent = LoginActivity)
+ *   exit  OtpFragment
+ * exit  LoginActivity
+ * enter DashboardActivity        (activity)
+ * ...
+ * ```
  *
- * Screen changes are reported through [onChange] **at lifecycle-callback time** (the
- * moment the screen actually became foreground), so screen enter/exit events carry
- * the real transition timestamp — not the time a periodic capture tick happened to
- * notice. Every event's timestamp must be when the thing happened.
+ * Changes are reported through [onTransition] **at lifecycle-callback time** (the
+ * moment the screen actually became foreground), so the events carry the real
+ * transition timestamp — never the time a periodic capture tick noticed.
  *
  * androidx.fragment is an OPTIONAL dependency (`compileOnly`): the fragment-touching
  * code lives in [FragmentScreenBinder], which is only loaded after a runtime check
@@ -28,21 +37,55 @@ import androidx.fragment.app.FragmentManager
  * `NoClassDefFoundError`.
  */
 internal class ScreenTracker(
-    private val onChange: (old: String?, new: String, timestampMs: Long) -> Unit,
+    private val onTransition: (changes: List<Change>, timestampMs: Long) -> Unit,
 ) {
 
+    /** One enter/exit step of a transition. [parent] is the host Activity for fragments. */
+    data class Change(
+        val action: String,
+        val name: String,
+        val kind: String,
+        val parent: String? = null,
+    )
+
     @Volatile
-    var currentScreen: String? = null
+    var currentActivity: String? = null
         private set
+
+    @Volatile
+    var currentFragment: String? = null
+        private set
+
+    /** The most specific current screen: the fragment when one is resumed, else the activity. */
+    val currentScreen: String? get() = currentFragment ?: currentActivity
 
     private var application: Application? = null
 
-    /** Main thread. Reports the change with the wall-clock time it happened. */
-    private fun setScreen(name: String) {
-        if (name == currentScreen) return
-        val old = currentScreen
-        currentScreen = name
-        runCatching { onChange(old, name, System.currentTimeMillis()) }
+    /** Main thread. A new Activity is foreground: close the old scopes, open the new. */
+    private fun onActivityScreen(name: String) {
+        if (name == currentActivity) return
+        val changes = ArrayList<Change>(3)
+        currentFragment?.let { changes += Change(ScreenAction.EXIT, it, ScreenKind.FRAGMENT, currentActivity) }
+        currentActivity?.let { changes += Change(ScreenAction.EXIT, it, ScreenKind.ACTIVITY) }
+        changes += Change(ScreenAction.ENTER, name, ScreenKind.ACTIVITY)
+        currentFragment = null
+        currentActivity = name
+        report(changes)
+    }
+
+    /** Main thread (via the fragment binder). A fragment became current inside [host]. */
+    fun onFragmentScreen(name: String, host: String?) {
+        if (name == currentFragment) return
+        val parent = host ?: currentActivity
+        val changes = ArrayList<Change>(2)
+        currentFragment?.let { changes += Change(ScreenAction.EXIT, it, ScreenKind.FRAGMENT, currentActivity) }
+        changes += Change(ScreenAction.ENTER, name, ScreenKind.FRAGMENT, parent)
+        currentFragment = name
+        report(changes)
+    }
+
+    private fun report(changes: List<Change>) {
+        runCatching { onTransition(changes, System.currentTimeMillis()) }
     }
 
     private val callbacks = object : Application.ActivityLifecycleCallbacks {
@@ -51,7 +94,7 @@ internal class ScreenTracker(
         }
 
         override fun onActivityResumed(activity: Activity) {
-            setScreen(activity.javaClass.simpleName)
+            onActivityScreen(activity.javaClass.simpleName)
         }
 
         override fun onActivityStarted(activity: Activity) {}
@@ -70,12 +113,8 @@ internal class ScreenTracker(
     fun uninstall() {
         application?.let { app -> runCatching { app.unregisterActivityLifecycleCallbacks(callbacks) } }
         application = null
-        currentScreen = null
-    }
-
-    /** Called (on the main thread) by the fragment binder when a fragment becomes current. */
-    fun onFragmentScreen(name: String) {
-        setScreen(name)
+        currentActivity = null
+        currentFragment = null
     }
 }
 
@@ -103,7 +142,10 @@ internal object FragmentScreenBinder {
                 override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
                     // Ignore headless / view-less fragments and anonymous holders.
                     if (f.view != null && !f.javaClass.isAnonymousClass) {
-                        tracker.onFragmentScreen(f.javaClass.simpleName)
+                        tracker.onFragmentScreen(
+                            f.javaClass.simpleName,
+                            f.activity?.javaClass?.simpleName,
+                        )
                     }
                 }
             },
