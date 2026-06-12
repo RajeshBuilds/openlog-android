@@ -88,6 +88,16 @@ class SessionCaptureEngine(
     private var started = false
 
     /**
+     * The screen whose Meta+FullSnapshot was emitted last, across ALL windows.
+     * The player's tree is whatever screen last sent a FullSnapshot, so when we
+     * return to a kept-alive window (its own [SnapshotStatus] unchanged) after
+     * another screen snapshotted, the diff against its last tree would emit
+     * nothing and replay would stay stuck on the other screen. Only read/written
+     * on [executor] (single thread).
+     */
+    private var lastEmittedScreen: String? = null
+
+    /**
      * Resolves the Activity/Fragment screen hierarchy from lifecycle callbacks and
      * reports transitions *at the moment they happen* — so screen enter/exit events
      * carry the real transition time, not a periodic-tick time. Transitions arrive
@@ -278,12 +288,17 @@ class SessionCaptureEngine(
             val now = System.currentTimeMillis()
 
             val screenChanged = screen != status.screenHref
-            if (!status.sentFullSnapshot || screenChanged) {
+            // Re-send in full (not diff) when the player last saw a DIFFERENT screen's
+            // FullSnapshot — i.e. we came back to this window after another screen
+            // snapshotted in between.
+            val playerOnOtherScreen = screen != lastEmittedScreen
+            if (!status.sentFullSnapshot || screenChanged || playerOnOtherScreen) {
                 emit(Events.meta(now, screen, decor.width.norm(), decor.height.norm()))
                 emit(Events.fullSnapshot(now, wireframes))
                 status.sentFullSnapshot = true
                 status.screenHref = screen
                 status.lastSnapshot = wireframes
+                lastEmittedScreen = screen
             } else {
                 val previous = status.lastSnapshot.orEmpty()
                 SnapshotDiff.mutationEvent(previous, wireframes, now)?.let { emit(it) }
@@ -393,9 +408,14 @@ class SessionCaptureEngine(
     private fun hrefOf(view: View): String =
         activityNameOf(view) ?: view.javaClass.simpleName
 
-    /** The simple name of the Activity hosting [view]'s window, or null for non-Activity windows. */
+    /**
+     * The simple name of the Activity hosting [view]'s window, or null for non-Activity
+     * windows. Resolved via the PhoneWindow's context: a DecorView's own context is a
+     * DecorContext wrapping the *application* context (API 24+), so unwrapping it never
+     * reaches the Activity — but the Window's context is the Activity itself.
+     */
     private fun activityNameOf(view: View): String? {
-        var ctx: Context? = view.context
+        var ctx: Context? = view.phoneWindow?.context ?: view.context
         while (ctx is ContextWrapper && ctx !is Activity) ctx = ctx.baseContext
         return (ctx as? Activity)?.javaClass?.simpleName
     }
