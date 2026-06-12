@@ -31,6 +31,11 @@ class FileSessionSink(
             val w = writerLocked()
             w.write(event.toNdjsonLine())
             w.write("\n")
+            // Flush after each line so the on-disk file always ends on a complete
+            // event (valid NDJSON), even mid-session or after an abrupt kill. The
+            // flush runs on the single capture thread (off the UI thread) and pushes
+            // to the OS without fsync, so the cost is negligible at our event rate.
+            w.flush()
         }
     }
 
