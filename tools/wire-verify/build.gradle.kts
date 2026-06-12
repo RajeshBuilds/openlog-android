@@ -7,10 +7,19 @@ repositories {
     mavenCentral()
 }
 
-// Pin the build to a JVM the Kotlin plugin supports, regardless of the
-// JDK that happens to launch Gradle.
+// Target JVM 17 bytecode while compiling with whatever JDK launches Gradle (no
+// toolchain provisioning), so the gate builds offline / without the foojay
+// resolver. Any JDK 17+ works. Java and Kotlin targets are pinned together to
+// satisfy Kotlin's JVM-target consistency check.
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
 kotlin {
-    jvmToolchain(17)
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
 }
 
 dependencies {
