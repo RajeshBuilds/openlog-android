@@ -54,6 +54,9 @@ class SessionCaptureEngine(
     private val correlation: Correlation,
     private val density: Float,
     throttleMs: Long = 1_000L,
+    captureScrolls: Boolean = true,
+    captureInputs: Boolean = true,
+    scrollThrottleMs: Long = 100L,
 ) {
     private val appContext = context.applicationContext
 
@@ -61,6 +64,21 @@ class SessionCaptureEngine(
         Executors.newSingleThreadScheduledExecutor(NamedThreadFactory("openlog-capture"))
 
     private val throttler = Throttler(throttleMs, executor)
+
+    /** Real-time scroll/input capture (rrweb source 3/5). Null when both are disabled. */
+    private val instrumenter: InteractionInstrumenter? =
+        if (captureScrolls || captureInputs) {
+            InteractionInstrumenter(
+                density = density,
+                policy = policy,
+                captureScrolls = captureScrolls,
+                captureInputs = captureInputs,
+                scrollThrottleMs = scrollThrottleMs,
+                emitOffThread = { event -> executor.execute { emit(event) } },
+            )
+        } else {
+            null
+        }
 
     /** Per-decorView capture state. Weak keys so closed windows are collected. */
     private val tracked: MutableMap<View, Tracking> =
@@ -149,6 +167,8 @@ class SessionCaptureEngine(
             // Main thread: bump the draw counter and enqueue a throttled capture.
             status.drawSequence.incrementAndGet()
             throttler.submit { captureFrame(ref, status) }
+            // Attach input watchers / refresh scrollables (throttled internally, off-loads emit).
+            instrumenter?.onDraw(decor)
         }
 
         val touchInterceptor = TouchEventInterceptor { motionEvent, dispatch ->
@@ -165,12 +185,14 @@ class SessionCaptureEngine(
 
         // Kick an initial capture so a static screen is recorded without waiting for a redraw.
         throttler.submit { captureFrame(ref, status) }
+        instrumenter?.onDraw(decor)
     }
 
     private fun detach(decor: View) {
         val tracking = tracked.remove(decor) ?: return
         runCatching { tracking.drawTrigger.unregister(decor) }
         runCatching { tracking.windowRef.get()?.touchEventInterceptors?.remove(tracking.touchInterceptor) }
+        instrumenter?.release(decor)
     }
 
     // ---- frame capture (T3/T6) --------------------------------------------

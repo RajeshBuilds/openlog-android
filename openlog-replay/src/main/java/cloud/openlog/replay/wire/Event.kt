@@ -24,10 +24,12 @@ object EventType {
     const val CUSTOM = 5
 }
 
-/** Incremental snapshot source enums (Part 2.1). */
+/** Incremental snapshot source enums (Part 2.1, extended with rrweb's scroll/input). */
 object Source {
     const val MUTATION = 0
     const val MOUSE = 2
+    const val SCROLL = 3
+    const val INPUT = 5
 }
 
 /** Touch interaction enums (Part 2.1). `POINTER` is the touch pointer type. */

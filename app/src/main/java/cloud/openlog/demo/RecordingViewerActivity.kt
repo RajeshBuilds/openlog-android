@@ -10,6 +10,7 @@ import android.widget.TextView
 import android.widget.Toast
 import cloud.openlog.replay.OpenLog
 import java.io.File
+import java.io.RandomAccessFile
 import java.util.concurrent.Executors
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -64,14 +65,29 @@ class RecordingViewerActivity : Activity() {
     private fun renderFile(file: File?): CharSequence {
         if (file == null || !file.exists()) return getString(R.string.no_recording)
         return try {
-            val lines = file.readLines().filter { it.isNotBlank() }
-            if (lines.isEmpty()) {
-                getString(R.string.no_recording)
-            } else {
-                lines.joinToString("\n\n") { prettyLine(it) }
-            }
+            // Read only the tail and cap the number of events so the viewer can never
+            // OOM regardless of how large the recording grows.
+            val allLines = readTail(file, MAX_BYTES).split('\n').filter { it.isNotBlank() }
+            if (allLines.isEmpty()) return getString(R.string.no_recording)
+            val truncated = allLines.size > MAX_EVENTS
+            val lines = if (truncated) allLines.takeLast(MAX_EVENTS) else allLines
+            val body = lines.joinToString("\n\n") { prettyLine(it) }
+            if (truncated) "… showing last ${lines.size} events (file truncated) …\n\n$body" else body
         } catch (t: Throwable) {
             "Could not read recording: ${t.message}"
+        }
+    }
+
+    /** Read at most [maxBytes] from the end of [file], dropping a leading partial line. */
+    private fun readTail(file: File, maxBytes: Long): String {
+        val length = file.length()
+        if (length <= maxBytes) return file.readText()
+        RandomAccessFile(file, "r").use { raf ->
+            raf.seek(length - maxBytes)
+            val bytes = ByteArray(maxBytes.toInt())
+            raf.readFully(bytes)
+            // Drop everything up to and including the first newline (a partial line).
+            return String(bytes).substringAfter('\n')
         }
     }
 
@@ -88,5 +104,10 @@ class RecordingViewerActivity : Activity() {
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         clipboard.setPrimaryClip(ClipData.newPlainText("openlog-session-path", path))
         Toast.makeText(this, path, Toast.LENGTH_SHORT).show()
+    }
+
+    private companion object {
+        const val MAX_BYTES = 256L * 1024 // read at most the last 256 KB
+        const val MAX_EVENTS = 400         // render at most the last 400 events
     }
 }

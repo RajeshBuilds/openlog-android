@@ -50,7 +50,8 @@
         android:layout_marginTop="12dp"
         android:layout_weight="1"
         android:background="@color/surface"
-        android:padding="8dp">
+        android:padding="8dp"
+        android:tag="openlog-ignore">
 
         <TextView
             android:id="@+id/jsonOutput"

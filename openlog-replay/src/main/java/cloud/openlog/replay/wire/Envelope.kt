@@ -66,6 +66,24 @@ data class TouchData(
     val pointerType: Int = Touch.POINTER,
 )
 
+/** Scroll incremental payload (`source: 3`). [x]/[y] are the density-normalized scroll offsets. */
+@Serializable
+data class ScrollData(
+    val source: Int = Source.SCROLL,
+    val id: Int,
+    val x: Int,
+    val y: Int,
+)
+
+/** Input incremental payload (`source: 5`). [text] is masked at source; [isChecked] for toggles. */
+@Serializable
+data class InputData(
+    val source: Int = Source.INPUT,
+    val id: Int,
+    val text: String? = null,
+    val isChecked: Boolean? = null,
+)
+
 /** Generic Custom payload wrapper (`tag` + arbitrary `payload`). */
 @Serializable
 data class CustomData(
@@ -171,6 +189,14 @@ object Events {
     /** IncrementalSnapshot touch (3, `source: 2`). [type] is [Touch.START]/[Touch.END]. */
     fun touch(timestamp: Long, type: Int, id: Int, x: Int, y: Int): Event =
         Event(EventType.INCREMENTAL, timestamp, dataOf(TouchData(type = type, id = id, x = x, y = y)))
+
+    /** IncrementalSnapshot scroll (3, `source: 3`). [x]/[y] are density-normalized offsets. */
+    fun scroll(timestamp: Long, id: Int, x: Int, y: Int): Event =
+        Event(EventType.INCREMENTAL, timestamp, dataOf(ScrollData(id = id, x = x, y = y)))
+
+    /** IncrementalSnapshot input (3, `source: 5`). [text] must already be masked. */
+    fun input(timestamp: Long, id: Int, text: String? = null, isChecked: Boolean? = null): Event =
+        Event(EventType.INCREMENTAL, timestamp, dataOf(InputData(id = id, text = text, isChecked = isChecked)))
 
     /** Custom (5) keyboard-open event with IME height (density-normalized). */
     fun keyboardOpen(timestamp: Long, height: Int): Event =
