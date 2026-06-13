@@ -7,6 +7,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
+import android.widget.CompoundButton
 import android.widget.TextView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -359,11 +360,39 @@ class SessionCaptureEngine(
                             x = x, y = y,
                         ),
                     )
+                } else if (type == Touch.END && target is CompoundButton && decor != null) {
+                    // A CompoundButton (CheckBox/Switch/RadioButton/ToggleButton) flips
+                    // its checked state synchronously when the click lands on ACTION_UP.
+                    // The throttled poll wouldn't capture that until up to one interval
+                    // later, so a replay seek right after the tap shows the stale state.
+                    // Flush a diff now (scoped to this interaction — no change to the
+                    // global poll interval) so the new checked value lands within a frame.
+                    flushAfterInteraction(ref)
                 }
             } catch (_: Throwable) {
             } finally {
                 copy.recycle()
             }
+        }
+    }
+
+    /**
+     * Force a wireframe diff for [ref]'s window shortly after an interaction that
+     * mutated view state synchronously (a CompoundButton toggle), bypassing the
+     * throttle. Scheduled with a one-frame delay because [handleTouch] is dispatched
+     * *before* the click is delivered to the view, so the toggle hasn't been applied
+     * yet at this point; the delay lets the main thread finish it before we walk the
+     * tree. [captureFrame] self-guards (detached/unchanged windows emit nothing).
+     */
+    private fun flushAfterInteraction(ref: WeakReference<View>) {
+        val decor = ref.get() ?: return
+        val status = tracked[decor]?.status ?: return
+        runCatching {
+            executor.schedule(
+                { captureFrame(ref, status) },
+                POST_INTERACTION_FLUSH_DELAY_MS,
+                TimeUnit.MILLISECONDS,
+            )
         }
     }
 
@@ -431,5 +460,12 @@ class SessionCaptureEngine(
 
         /** Delay before the post-transition forced snapshot, to let the new screen lay out. */
         const val PROMPT_SNAPSHOT_DELAY_MS = 48L
+
+        /**
+         * Delay before the post-interaction flush (CompoundButton toggle). One frame is
+         * enough for the click — delivered after [handleTouch] is dispatched — to apply
+         * the new checked state, while keeping the mutation well within ~50ms of the tap.
+         */
+        const val POST_INTERACTION_FLUSH_DELAY_MS = 16L
     }
 }
