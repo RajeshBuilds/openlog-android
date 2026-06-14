@@ -51,7 +51,7 @@ class ReplayUploadWorkerTest {
         }
     }
 
-    private fun device() = DeviceInfo("Android", "15", "Pixel 9", 2.625f, 411, 923, "1.0.0")
+    private fun device() = DeviceInfo("Android", "15", "Google", "Pixel 9", 2.625f, 411, 923, "1.0.0")
 
     private fun seedSession(sessionId: String, batches: List<Pair<Int, String>>): File {
         val dir = File(queueRoot, sessionId).apply { mkdirs() }

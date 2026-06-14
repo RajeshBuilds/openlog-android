@@ -13,6 +13,10 @@ import kotlinx.serialization.json.Json
 data class DeviceInfo(
     val os: String = "Android",
     val osVersion: String,
+    // Build.MANUFACTURER + Build.MODEL. model alone is often a code on non-Google
+    // brands (e.g. "SM-G991B"), so manufacturer gives the UI enough to render a
+    // readable name (e.g. "samsung SM-G991B").
+    val manufacturer: String,
     val model: String,
     val density: Float,
     val w: Int,

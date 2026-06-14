@@ -227,6 +227,7 @@ object OpenLog {
         }.getOrNull() ?: "unknown"
         return DeviceInfo(
             osVersion = Build.VERSION.RELEASE ?: Build.VERSION.SDK_INT.toString(),
+            manufacturer = Build.MANUFACTURER ?: "unknown",
             model = Build.MODEL ?: "unknown",
             density = metrics.density,
             w = (metrics.widthPixels / metrics.density).roundToInt(),
