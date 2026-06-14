@@ -62,7 +62,13 @@ class ReplayUploadWorker(
             for (batch in batches) {
                 val seq = seqOf(batch.name) ?: continue
                 when (uploadBatch(meta, batch, seq)) {
-                    Outcome.SUCCESS, Outcome.DROP -> batch.delete()
+                    Outcome.SUCCESS -> batch.delete()
+                    Outcome.DROP -> {
+                        // Permanently rejected (e.g. 4xx) — drop so it can't block the
+                        // queue, but say so: this is data loss, not a successful upload.
+                        Log.w(TAG, "Dropping batch seq=$seq for session ${meta.sessionId}: permanently rejected by server.")
+                        batch.delete()
+                    }
                     Outcome.RETRY -> {
                         anyRetry = true
                         break // hold the rest of THIS session until the retry; preserve order

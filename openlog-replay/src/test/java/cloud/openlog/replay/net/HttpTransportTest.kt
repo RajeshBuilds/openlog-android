@@ -95,6 +95,32 @@ class HttpTransportTest {
     }
 
     @Test
+    fun urlConnectionTransportFollows308PreservingPostAndBody() {
+        // Deployments 308-redirect apex->www; the transport must re-POST to the new
+        // location with the method and body intact, not drop it as a 3xx.
+        server.createContext("/api/ingest-apex") { exchange: HttpExchange ->
+            exchange.responseHeaders.add("Location", "$baseUrl/api/ingest")
+            exchange.sendResponseHeaders(308, -1)
+            exchange.close()
+        }
+
+        val resp = UrlConnectionTransport.execute(
+            HttpRequest(
+                method = "POST",
+                url = "$baseUrl/api/ingest-apex",
+                headers = mapOf("Content-Type" to "application/x-ndjson", "Authorization" to "Bearer tok"),
+                body = "{\"type\":4}\n".toByteArray(Charsets.UTF_8),
+            ),
+        )
+
+        assertEquals(202, resp.code)
+        // The followed request hit the real handler with method + body + headers intact.
+        assertEquals("POST", captured.method)
+        assertEquals("{\"type\":4}\n", captured.body)
+        assertEquals("Bearer tok", captured.auth)
+    }
+
+    @Test
     fun networkErrorSurfacesAsThrownException() {
         // Nothing listening on this port → connect refused → IOException.
         var threw = false
