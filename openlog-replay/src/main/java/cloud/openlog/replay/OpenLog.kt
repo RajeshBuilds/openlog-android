@@ -9,10 +9,15 @@ import cloud.openlog.replay.correlate.Correlation
 import cloud.openlog.replay.correlate.TraceparentInterceptor
 import cloud.openlog.replay.graph.ViewScreenGraphProvider
 import cloud.openlog.replay.mask.MaskPolicy
+import cloud.openlog.replay.net.HttpTransport
+import cloud.openlog.replay.net.OpenLogTransports
+import cloud.openlog.replay.sink.CompositeSessionSink
+import cloud.openlog.replay.sink.DeviceInfo
 import cloud.openlog.replay.sink.FileSessionSink
 import cloud.openlog.replay.sink.HttpSessionSink
 import cloud.openlog.replay.sink.SessionSink
 import java.io.File
+import kotlin.math.roundToInt
 import kotlin.random.Random
 import okhttp3.Interceptor
 import okhttp3.Response
@@ -34,13 +39,24 @@ import okhttp3.Response
  */
 object OpenLog {
 
+    /** SDK version reported to the ingest API as `X-OpenLog-Sdk`. */
+    const val SDK_VERSION = "0.1.0"
+
     /**
      * @param maskAllText   mask all text by default (banking default: true).
      * @param maskAllImages mask all images by default (banking default: true).
      * @param sampleRate    fraction of sessions to record, 0.0..1.0.
      * @param throttleMs    minimum interval between snapshots of a window.
-     * @param http          when set, events upload via [HttpSessionSink]; otherwise
-     *                      they are written to a local NDJSON file (validation sink).
+     * @param http          when set, events upload via [HttpSessionSink].
+     * @param file          when true, events are also written to a local NDJSON file
+     *                      (see [currentSessionFile]). Defaults to on only when not
+     *                      uploading; combine with [http] for BOTH (upload + keep an
+     *                      offline copy), or set false with [http] to upload only.
+     *                      With neither, nothing is recorded.
+     * @param transport     networking backend for replay uploads. Defaults to the
+     *                      built-in [java.net.HttpURLConnection] transport (no host
+     *                      dependency). Supply `OkHttpTransport(client)` to reuse a
+     *                      host OkHttpClient's pool / TLS-pinning / proxy / interceptors.
      * @param captureScrolls capture scroll gestures as rrweb scroll events (source 3)
      *                      for smooth scroll playback. Main-thread cost is negligible
      *                      (throttled by [scrollThrottleMs]); adds recording volume
@@ -60,6 +76,8 @@ object OpenLog {
         val sampleRate: Double = 1.0,
         val throttleMs: Long = 1_000L,
         val http: HttpSessionSink.Config? = null,
+        val file: Boolean = http == null,
+        val transport: HttpTransport? = null,
         val captureScrolls: Boolean = true,
         val captureInputs: Boolean = true,
         val scrollThrottleMs: Long = 100L,
@@ -80,6 +98,9 @@ object OpenLog {
     fun init(context: Context, config: Config = Config()) {
         this.appContext = context.applicationContext
         this.config = config
+        // Register the upload transport globally so [ReplayUploadWorker] (built
+        // reflectively by WorkManager) can reach it, even in a cold process.
+        OpenLogTransports.set(config.transport)
     }
 
     /**
@@ -154,10 +175,15 @@ object OpenLog {
 
     /**
      * The NDJSON file the current session is writing to, or null when not recording
-     * (or when uploading via the HTTP sink). Pair with [flush] before reading.
+     * or when the local file sink is disabled (`Config.file = false`, upload-only).
+     * Pair with [flush] before reading.
      */
     @JvmStatic
-    fun currentSessionFile(): File? = (sink as? FileSessionSink)?.file
+    fun currentSessionFile(): File? = when (val s = sink) {
+        is FileSessionSink -> s.file
+        is CompositeSessionSink -> s.sinks.filterIsInstance<FileSessionSink>().firstOrNull()?.file
+        else -> null
+    }
 
     /**
      * An OkHttp interceptor that injects the session's W3C `traceparent` on each
@@ -173,12 +199,40 @@ object OpenLog {
     }
 
     private fun buildSink(ctx: Context, correlation: Correlation): SessionSink {
-        val http = config.http
-        return if (http != null) {
-            HttpSessionSink(ctx, http)
-        } else {
-            FileSessionSink(File(ctx.filesDir, "openlog/sessions"), correlation.sessionId)
+        val sinks = buildList {
+            config.http?.let {
+                add(
+                    HttpSessionSink(
+                        context = ctx,
+                        config = it,
+                        sessionId = correlation.sessionId,
+                        device = deviceInfo(ctx),
+                        sdkVersion = SDK_VERSION,
+                    ),
+                )
+            }
+            if (config.file) {
+                add(FileSessionSink(File(ctx.filesDir, "openlog/sessions"), correlation.sessionId))
+            }
         }
+        // One sink → use it directly; otherwise fan out (0 = no-op when both disabled).
+        return sinks.singleOrNull() ?: CompositeSessionSink(sinks)
+    }
+
+    /** Device descriptor for the `X-OpenLog-Device` ingest header (sizes in dp). */
+    private fun deviceInfo(ctx: Context): DeviceInfo {
+        val metrics = ctx.resources.displayMetrics
+        val appVersion = runCatching {
+            ctx.packageManager.getPackageInfo(ctx.packageName, 0).versionName
+        }.getOrNull() ?: "unknown"
+        return DeviceInfo(
+            osVersion = Build.VERSION.RELEASE ?: Build.VERSION.SDK_INT.toString(),
+            model = Build.MODEL ?: "unknown",
+            density = metrics.density,
+            w = (metrics.widthPixels / metrics.density).roundToInt(),
+            h = (metrics.heightPixels / metrics.density).roundToInt(),
+            appVersion = appVersion,
+        )
     }
 
     private fun onMain(block: () -> Unit) {

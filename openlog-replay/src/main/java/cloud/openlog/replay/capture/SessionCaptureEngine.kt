@@ -36,6 +36,7 @@ import java.util.Collections
 import java.util.WeakHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
@@ -88,6 +89,9 @@ class SessionCaptureEngine(
     @Volatile
     private var started = false
 
+    /** Recurring force-flush of the buffered tail; cancelled on [stop]. */
+    private var periodicFlush: ScheduledFuture<*>? = null
+
     /**
      * The screen whose Meta+FullSnapshot was emitted last, across ALL windows.
      * The player's tree is whatever screen last sent a FullSnapshot, so when we
@@ -136,7 +140,15 @@ class SessionCaptureEngine(
         }
 
         override fun onStop(owner: LifecycleOwner) {
-            executor.execute { runCatching { emit(Events.appBackground(System.currentTimeMillis())) } }
+            executor.execute {
+                runCatching { emit(Events.appBackground(System.currentTimeMillis())) }
+                // Persist the buffered tail now: most process kills happen while
+                // backgrounded, and an HTTP sink only writes to disk at its
+                // count/size thresholds — so without this the unflushed tail (and
+                // its pending upload) would be lost on a background kill. flush()
+                // no-ops on an empty buffer, so rapid fg/bg toggling is harmless.
+                runCatching { sink.flush() }
+            }
         }
     }
 
@@ -163,11 +175,25 @@ class SessionCaptureEngine(
         // Attach to every existing window, then keep up with new ones (T2).
         Curtains.rootViews.toList().forEach { attach(it) }
         Curtains.onRootViewsChangedListeners += rootViewsListener
+        // Bound how long the buffered tail can sit unpersisted, so a *foreground*
+        // crash (the onStop flush covers background kills) loses at most one
+        // interval of events. Runs on [executor], serialized with write/emit;
+        // sink.flush() no-ops on an empty buffer, so an idle session is cheap.
+        periodicFlush = runCatching {
+            executor.scheduleWithFixedDelay(
+                { runCatching { sink.flush() } },
+                PERIODIC_FLUSH_INTERVAL_MS,
+                PERIODIC_FLUSH_INTERVAL_MS,
+                TimeUnit.MILLISECONDS,
+            )
+        }.getOrNull()
     }
 
     fun stop() {
         if (!started) return
         started = false
+        periodicFlush?.cancel(false)
+        periodicFlush = null
         // Capture the open screen scopes before uninstalling, then close them in
         // nesting order (fragment first, then its host activity).
         val openFragment = screenTracker.currentFragment
@@ -467,5 +493,12 @@ class SessionCaptureEngine(
          * the new checked state, while keeping the mutation well within ~50ms of the tap.
          */
         const val POST_INTERACTION_FLUSH_DELAY_MS = 16L
+
+        /**
+         * Interval for the recurring buffered-tail flush. Bounds data loss from a
+         * foreground crash to ~one interval; background kills are handled promptly
+         * by the onStop flush. Larger = fewer, bigger batches.
+         */
+        const val PERIODIC_FLUSH_INTERVAL_MS = 30_000L
     }
 }
