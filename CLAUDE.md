@@ -13,6 +13,21 @@
 
 ---
 
+## Git workflow (do not violate)
+
+- NEVER commit or push directly to `main` (the default branch). All changes land via a
+  pull request.
+- "Commit and push" ALWAYS means: create a new branch → commit → push the branch → open a PR.
+  It NEVER means commit straight to `main`.
+- This holds even when the repo is already checked out on `main` (e.g. right after a PR
+  merge leaves HEAD on `main`) — branch FIRST, then commit. Check the current branch before
+  committing; if it's `main`, cut a branch.
+- Branch protection on `main` may be OFF and a direct push may succeed — that does NOT
+  authorize it. The rule stands regardless.
+- Never rewrite published history on `main` (no force-push) without explicit user approval.
+
+---
+
 ## Project layout
 
 ```
