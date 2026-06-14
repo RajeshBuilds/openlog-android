@@ -43,6 +43,7 @@ class IngestProtocolTest {
     fun deviceHeaderIsSingleLineJsonWithSpecFields() {
         val json = DeviceInfo(
             osVersion = "15",
+            manufacturer = "Google",
             model = "Pixel 9",
             density = 2.625f,
             w = 411,
@@ -53,6 +54,7 @@ class IngestProtocolTest {
         assertTrue("header must be single-line", !json.contains('\n'))
         assertTrue(json.contains("\"os\":\"Android\""))
         assertTrue(json.contains("\"osVersion\":\"15\""))
+        assertTrue(json.contains("\"manufacturer\":\"Google\""))
         assertTrue(json.contains("\"model\":\"Pixel 9\""))
         assertTrue(json.contains("\"w\":411"))
         assertTrue(json.contains("\"h\":923"))
@@ -83,7 +85,7 @@ class IngestProtocolTest {
             token = "secret-token",
             appId = "com.example.app",
             sdkVersion = "0.1.0",
-            device = DeviceInfo("Android", "15", "Pixel 9", 2.625f, 411, 923, "1.0.0"),
+            device = DeviceInfo("Android", "15", "Google", "Pixel 9", 2.625f, 411, 923, "1.0.0"),
             extraHeaders = mapOf("X-Tenant" to "acme"),
         )
 
