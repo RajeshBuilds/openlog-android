@@ -136,7 +136,15 @@ class SessionCaptureEngine(
         }
 
         override fun onStop(owner: LifecycleOwner) {
-            executor.execute { runCatching { emit(Events.appBackground(System.currentTimeMillis())) } }
+            executor.execute {
+                runCatching { emit(Events.appBackground(System.currentTimeMillis())) }
+                // Persist the buffered tail now: most process kills happen while
+                // backgrounded, and an HTTP sink only writes to disk at its
+                // count/size thresholds — so without this the unflushed tail (and
+                // its pending upload) would be lost on a background kill. flush()
+                // no-ops on an empty buffer, so rapid fg/bg toggling is harmless.
+                runCatching { sink.flush() }
+            }
         }
     }
 
